@@ -1,0 +1,131 @@
+/* ==========================================================================
+   RESPONSIVIDADE E ADAPTAÇÃO PARA CELULARES E TABLETS (MEDIA QUERIES)
+   ========================================================================== */
+
+/* Dispositivos Móveis (Celulares e Tablets menores: até 768px) */
+@media screen and (max-width: 768px) {
+
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px 12px;
+        max-width: 100%;
+        box-shadow: none;
+        border-radius: 8px;
+    }
+
+    h1 {
+        font-size: 19px;
+    }
+
+    .subtitulo {
+        font-size: 12px;
+    }
+
+    /* Links de Navegação do Topo */
+    div[style*="display: flex; justify-content: center; gap:"] {
+        flex-direction: column;
+        gap: 8px !important;
+        align-items: center;
+    }
+
+    .link-resumo,
+    .link-navegacao {
+        font-size: 13px;
+    }
+
+    /* Formulário Principal */
+    .form-manual {
+        padding: 14px;
+        border-radius: 8px;
+    }
+
+    .form-grupo {
+        margin-bottom: 12px;
+    }
+
+    .linha-selecao-custom {
+        flex-direction: row;
+    }
+
+    input,
+    select {
+        padding: 12px 10px;
+        /* Campos maiores para facilitar o toque */
+        font-size: 15px;
+        /* Evita zoom automático no iOS */
+    }
+
+    /* Botões Principais */
+    .btn-add-caixa,
+    .btn-salvar-manual {
+        padding: 14px;
+        font-size: 15px;
+    }
+
+    /* Cards por Pallet e Tabelas */
+    .card-pallet-container {
+        padding: 10px;
+    }
+
+    .card-pallet-titulo {
+        font-size: 15px;
+    }
+
+    .bloco-cliente-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .grupo-acoes-header {
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 4px;
+    }
+
+    .btn-add-caixa-card,
+    .btn-excluir-lote-card {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    /* Ajuste de Tabelas para telas pequenas (Scroll Horizontal se necessário) */
+    .bloco-cliente-pallet {
+        overflow-x: auto;
+    }
+
+    .tabela-lote {
+        font-size: 12px;
+        min-width: 280px;
+    }
+
+    .tabela-lote th,
+    .tabela-lote td {
+        padding: 6px 4px;
+    }
+
+    .box-subtotal-medida {
+        font-size: 11px;
+    }
+
+    .rodape-total-pallet {
+        font-size: 12px;
+        padding: 8px;
+    }
+}
+
+/* Celulares Muito Pequenos (até 480px) */
+@media screen and (max-width: 480px) {
+
+    h1 {
+        font-size: 17px;
+    }
+
+    .btn-add-item {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}

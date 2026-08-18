@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shoulders Voice System</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>🎙️ Shoulders - Modo Voz</h1>
+        <p class="subtitulo">Controle de Lotes e Paletes via Reconhecimento de Voz</p>
+
+        <!-- Navegação Rápida entre Arquivos da Pasta src/ -->
+        <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 15px;">
+            <a href="./resumo.html" target="_blank" class="link-navegacao">📊 Abrir Resumo Geral</a>
+            <a href="./manual.html" class="link-navegacao">✍️ Ir para Modo Manual</a>
+        </div>
+
+        <div id="data-atual" style="font-weight: bold; color: #5f6368; margin-bottom: 15px; font-size: 14px;">
+            📅 Data de hoje: --/--/----
+        </div>
+
+        <!-- CONTEÚDO DO MODO VOZ -->
+        <div id="aba-voz">
+            <button id="btn-toggle-voz" onclick="alternarVozIA()" class="btn-toggle-voz">
+                🔊 Voz da IA: LIGADA
+            </button>
+
+            <div id="status" class="status-ia">Clique no botão e diga "Nova Remessa".</div>
+
+            <button id="btn-escutar" class="btn-mic">🎙️ Falar com a IA</button>
+
+            <div class="log-conversacao" id="historico">
+                <p class="linha-ia"><strong>IA:</strong> Sistema pronto. Pode iniciar dizendo "Nova remessa".</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal de Seleção Manual em Caso de Dúvida da Voz -->
+    <div id="modal-cliente"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;">
+        <div
+            style="background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <h3 style="margin-top: 0; color: #1a73e8;">🏢 Seleção Manual de Cliente</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Digite para filtrar ou escolha na lista:</p>
+
+            <input type="text" id="filtro-cliente" placeholder="🔍 Digite o nome do cliente..."
+                oninput="filtrarClientesModal()"
+                style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px;">
+
+            <select id="select-cliente" size="6"
+                style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 15px; font-size: 14px;"></select>
+
+            <div class="modal-acoes">
+                <button onclick="confirmarClienteModal()" class="btn-modal-confirmar">Confirmar</button>
+                <button onclick="fecharModalCliente()" class="btn-modal-cancelar">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./app.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const hoje = new Date();
+            const dia = String(hoje.getDate()).padStart(2, '0');
+            const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+            const ano = hoje.getFullYear();
+            document.getElementById('data-atual').innerText = `📅 Data de hoje: ${dia}/${mes}/${ano}`;
+        });
+    </script>
+</body>
+
+</html>

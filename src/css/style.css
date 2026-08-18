@@ -1,0 +1,252 @@
+/* ==========================================================================
+   ESTILOS GERAIS E COMPARTILHADOS (VOICE, MANUAL E RESUMO)
+   ========================================================================== */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 650px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    text-align: center;
+}
+
+h1 {
+    color: #1a73e8;
+    margin-bottom: 5px;
+    font-size: 22px;
+}
+
+.subtitulo {
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 15px;
+}
+
+.link-navegacao {
+    display: inline-block;
+    color: #1a73e8;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.link-navegacao:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   ELEMENTOS ESPECÍFICOS DO MODO VOZ (voice.html)
+   ========================================================================== */
+
+.btn-toggle-voz {
+    background-color: #f1f3f4;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 15px;
+    transition: background-color 0.2s;
+}
+
+.btn-toggle-voz:hover {
+    background-color: #e2e6ea;
+}
+
+.status-ia {
+    background: #e8f0fe;
+    color: #1a73e8;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 15px;
+    border: 1px solid #aecbfa;
+}
+
+.btn-mic {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 18px 30px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+    transition: transform 0.1s, background-color 0.2s;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.btn-mic:hover {
+    background-color: #bb2d3b;
+    transform: scale(1.02);
+}
+
+.btn-mic:active {
+    transform: scale(0.98);
+}
+
+.log-conversacao {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: left;
+    max-height: 250px;
+    overflow-y: auto;
+    font-size: 13px;
+}
+
+.linha-ia {
+    margin: 5px 0;
+    color: #333;
+}
+
+/* Modal de Seleção de Cliente no Modo Voz */
+.btn-modal-confirmar {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.btn-modal-cancelar {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal-acoes {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   ELEMENTOS ESPECÍFICOS DO MODO MANUAL (manual.html)
+   ========================================================================== */
+
+.form-card {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+.form-grupo {
+    margin-bottom: 12px;
+}
+
+.form-grupo-duplo {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.form-grupo-duplo>div {
+    flex: 1;
+}
+
+label {
+    display: block;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.btn-acao {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btn-add {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.btn-add:hover {
+    background-color: #0b5ed7;
+}
+
+.btn-salvar {
+    background-color: #24b33b;
+    color: white;
+    border-radius: 25px;
+    margin-top: 15px;
+}
+
+.btn-salvar:hover {
+    background-color: #1e9631;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+table th,
+table td {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+    text-align: center;
+}
+
+table th {
+    background: #f1f3f4;
+}
+
+.btn-remover {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 3px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.vazio {
+    color: #888;
+    font-style: italic;
+    margin-top: 15px;
+}

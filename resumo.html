@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shoulders - Resumo de Fechamento</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 5px;
+            font-size: 22px;
+        }
+
+        .subtitulo {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+
+        .campo-busca {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .btn-atualizar {
+            background: #24b33b;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .btn-atualizar:hover {
+            background: #1e9631;
+        }
+
+        .btn-emitir-todos {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        /* Sanfona de Data */
+        .bloco-data-group {
+            border: 1px solid #dcdcdc;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .header-data-toggle {
+            background: #f0f4f9;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: #1a73e8;
+            font-size: 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #e0e0e0;
+            user-select: none;
+        }
+
+        .header-data-toggle:hover {
+            background: #e8f0fe;
+        }
+
+        .conteudo-data-group {
+            padding: 15px;
+            display: block;
+        }
+
+        /* Card por Cliente */
+        .card-cliente-resumo {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #24b33b;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 15px;
+            text-align: left;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .cliente-titulo {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-bottom: 2px;
+        }
+
+        .cliente-cnpj {
+            font-size: 11px;
+            color: #757575;
+            margin-bottom: 12px;
+        }
+
+        /* Campos Seleção CROAMIS */
+        .linha-campo-croamis {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .linha-campo-croamis label {
+            font-weight: bold;
+            color: #333;
+            min-width: 110px;
+        }
+
+        .linha-campo-croamis select {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 13px;
+            background-color: #fff;
+        }
+
+        .tag-localizacao {
+            font-size: 13px;
+            color: #d93025;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        /* Tabela Linhas Medida */
+        .bloco-linha-caixa {
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .btn-editar-caixa-resumo {
+            background: #e0e0e0;
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Área de Notas Fiscais (NF-e) */
+        .box-nfe-container {
+            border: 1px dashed #1a73e8;
+            background: #f4f8fe;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+
+        .header-nfe-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+
+        .btn-add-nf {
+            background: #0d6efd;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .linha-input-nfe {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .input-chave-nfe {
+            flex: 2;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .input-valor-nfe {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .btn-remove-nf {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Botão Emitir LATAM */
+        .btn-emitir-latam {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(26, 115, 232, 0.25);
+        }
+
+        .btn-emitir-latam:hover {
+            background: #1557b0;
+        }
+
+        .status-carregando {
+            color: #666;
+            font-style: italic;
+            padding: 15px;
+        }
+
+        .btn-excluir-caixa-resumo {
+            background: #fce8e6;
+            color: #d93025;
+            border: 1px solid #f5c2c0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+
+        .btn-excluir-caixa-resumo:hover {
+            background: #d93025;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Navegação de Volta -->
+        <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 15px;">
+            <a href="./index.html" style="color: #1a73e8; font-weight: bold; text-decoration: none; font-size: 14px;">✍️
+                Volta para Lançamento Manual</a>
+            <a href="./voice.html"
+                style="color: #1a73e8; font-weight: bold; text-decoration: none; font-size: 14px;">🎙️
+                Ir para Modo Voz</a>
+        </div>
+
+        <h1>📊 Fechamento Consolidado</h1>
+        <p class="subtitulo">Agrupamento automático por cliente e medidas</p>
+
+        <input type="text" id="busca-resumo" class="campo-busca" placeholder="🔍 Buscar por destinatário ou CNPJ..."
+            oninput="renderizarResumoComAgrupamento()">
+
+        <button class="btn-atualizar" onclick="carregarDadosPlanilha()">🔄 Atualizar e Somar Lotes</button>
+        <button class="btn-emitir-todos" onclick="emitirTodosLotes()">🚀 Emitir Todos os Lotes (Abertura
+            Simultânea)</button>
+
+        <div id="container-resumo-lotes">
+            <div class="status-carregando">Clique em "Atualizar e Somar Lotes" para ler a planilha...</div>
+        </div>
+    </div>
+
+    <script>
+        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycby2zfEvuyFxV_nuNrno9jtiBCiRX9eWf8rWBh6hnC08kCVtYR9OjfolDU4SVpCmhbc8/exec";
+        const CHAVE_STORAGE_NFES = "shoulders_nfes_cache_v1";
+
+        const mapaCNPJShopping = {
+            "PLAZA CASA FORTE": "43470566006716",
+            "RIO MAR FORTALEZA": "43470566005906",
+            "RIO MAR ARACAJU": "43470566008760",
+            "RIO MAR": "43470566004268",
+            "IGUATEMI FORTALEZA": "43470566003296",
+            "RECIFE": "43470566002729",
+            "BARRA SALVADOR": "43470566004241",
+            "TIJUCA": "43470566006988",
+            "RIO SUL": "43470566010829",
+            "CATUAÍ MARINGA": "43470566012287",
+            "CATUAI MARINGA": "43470566012287",
+            "VITORIA": "43470566008417",
+            "BOULEVARD BELÉM": "43470566009227",
+            "BOULEVARD BELEM": "43470566009227",
+            "MANAUARA": "43470566010586",
+            "ILHA": "43470566010403",
+            "LEBLON": "43470566007100",
+            "SHOPPING DA BAHIA": "43470566010071",
+            "ICARAI": "43470566009065",
+            "MIDWAY": "43470566011043",
+            "VILA VELHA": "43470566010233",
+            "BATEL": "43470566007879",
+            "RIO POTY": "43470566013763",
+            "CATUAÍ LONDRINA": "43470566012368",
+            "CATUAI LONDRINA": "43470566012368",
+            "MACEIO": "43470566008093",
+            "MUELLER": "43470566001919",
+            "SHOPPING GRAO PARÁ": "43470566009146",
+            "SHOPPING GRAO PARA": "43470566009146",
+            "MANAIRA SHOPPING": "43470566008689",
+            "BARRA SHOPPING": "43470566004853",
+            "HAIGHT DIAS": "43470566013320",
+            "HAIGHT VILLAGE MALL": "43470566013925",
+            "RIO DESIGN BARRA": "43470566002214",
+            "HAIGHT LEBLON": "43470566013844",
+            "NATAL": "43470566008506",
+            "HAIGHT RIO DESIGN": "43470566013500",
+            "SALVADOR SHOPPING": "43470566002052",
+            "FABIO MELO": "37208921000176",
+            "MONIZ": "49810965000193",
+            "FORMA PORTO": "56538551000130"
+        };
+
+        let dadosBrutosGlobal = [];
+        let estadoSanfonaDatas = {}; // Guarda estado aberto/fechado por data
+        let mapaNFesClientes = {}; // Guarda as NFs por id do card
+
+        document.addEventListener("DOMContentLoaded", () => {
+            carregarCacheNFes(); // ⬅️ Restaura o LocalStorage antes de desenhar a tela
+            carregarDadosPlanilha();
+        });
+
+        // ==========================================
+        // CONTROLE DO LOCALSTORAGE (NFs E VALORES)
+        // ==========================================
+        function carregarCacheNFes() {
+            try {
+                const salvo = localStorage.getItem(CHAVE_STORAGE_NFES);
+                if (salvo) {
+                    mapaNFesClientes = JSON.parse(salvo);
+                }
+            } catch (e) {
+                console.error("Erro ao carregar cache de NFs:", e);
+            }
+        }
+
+        function salvarCacheNFes() {
+            try {
+                localStorage.setItem(CHAVE_STORAGE_NFES, JSON.stringify(mapaNFesClientes));
+            } catch (e) {
+                console.error("Erro ao salvar cache de NFs:", e);
+            }
+        }
+
+        function obterDataHoje() {
+            const hoje = new Date();
+            const d = String(hoje.getDate()).padStart(2, '0');
+            const m = String(hoje.getMonth() + 1).padStart(2, '0');
+            return `${d}/${m}/${hoje.getFullYear()}`;
+        }
+
+        function carregarDadosPlanilha() {
+            const container = document.getElementById('container-resumo-lotes');
+            container.innerHTML = `<div class="status-carregando">⏳ Lendo planilha e agrupando dados...</div>`;
+
+            const callbackName = "cb_resumo_" + Math.round(Math.random() * 1000000);
+
+            window[callbackName] = function (dados) {
+                delete window[callbackName];
+                const scriptTag = document.getElementById('script-jsonp-resumo');
+                if (scriptTag) scriptTag.remove();
+
+                if (!Array.isArray(dados) || dados.length === 0) {
+                    container.innerHTML = `<div class="status-carregando">Nenhum lote encontrado na planilha.</div>`;
+                    return;
+                }
+
+                dadosBrutosGlobal = dados;
+                renderizarResumoComAgrupamento();
+            };
+
+            const scriptAntigo = document.getElementById('script-jsonp-resumo');
+            if (scriptAntigo) scriptAntigo.remove();
+
+            const script = document.createElement('script');
+            script.id = 'script-jsonp-resumo';
+            script.src = `${URL_WEB_APP}?callback=${callbackName}&_v=${new Date().getTime()}`;
+            script.onerror = function () {
+                container.innerHTML = `<div class="status-carregando" style="color:red;">⚠️ Falha ao ler dados da planilha. Verifique a API.</div>`;
+            };
+            document.body.appendChild(script);
+        }
+
+        function renderizarResumoComAgrupamento() {
+            const container = document.getElementById('container-resumo-lotes');
+            const termoBusca = (document.getElementById('busca-resumo')?.value || "").toLowerCase().trim();
+            const dataHoje = obterDataHoje();
+
+            if (dadosBrutosGlobal.length === 0) {
+                container.innerHTML = `<div class="status-carregando">Nenhum registro carregado.</div>`;
+                return;
+            }
+
+            // Estrutura: Data -> Cliente -> Medida
+            const agrupadoPorData = {};
+
+            dadosBrutosGlobal.forEach(item => {
+                let dataStr = item.data ? String(item.data).trim() : dataHoje;
+                if (dataStr.includes("T")) dataStr = dataStr.split("T")[0];
+                if (dataStr.includes("-") && dataStr.length >= 10) {
+                    const p = dataStr.substring(0, 10).split("-");
+                    dataStr = `${p[2]}/${p[1]}/${p[0]}`;
+                }
+
+                const clienteNome = (item.destinatario || item.nome || "DESCONHECIDO").toString().trim().toUpperCase();
+                const cnpjVal = mapaCNPJShopping[clienteNome] || item.cnpj || "N/A";
+                const palletVal = item.pallet || "Pallet 1";
+                const medidaVal = (item.medida || "PADRÃO").toString().trim().toUpperCase();
+
+                let pesoVal = parseFloat(String(item.peso).replace(',', '.')) || 0;
+                let qtdVal = parseInt(item.quantidade, 10) || 1;
+
+                if (termoBusca && !clienteNome.toLowerCase().includes(termoBusca) && !cnpjVal.includes(termoBusca) && !dataStr.includes(termoBusca)) {
+                    return;
+                }
+
+                if (!agrupadoPorData[dataStr]) agrupadoPorData[dataStr] = {};
+                if (!agrupadoPorData[dataStr][clienteNome]) {
+                    agrupadoPorData[dataStr][clienteNome] = {
+                        cliente: clienteNome,
+                        cnpj: cnpjVal,
+                        pallet: palletVal,
+                        medidasMap: {},
+                        totalVol: 0,
+                        totalPeso: 0
+                    };
+                }
+
+                if (!agrupadoPorData[dataStr][clienteNome].medidasMap[medidaVal]) {
+                    agrupadoPorData[dataStr][clienteNome].medidasMap[medidaVal] = { vol: 0, peso: 0 };
+                }
+
+                agrupadoPorData[dataStr][clienteNome].medidasMap[medidaVal].vol += qtdVal;
+                agrupadoPorData[dataStr][clienteNome].medidasMap[medidaVal].peso += pesoVal;
+                agrupadoPorData[dataStr][clienteNome].totalVol += qtdVal;
+                agrupadoPorData[dataStr][clienteNome].totalPeso += pesoVal;
+            });
+
+            const datasOrdenadas = Object.keys(agrupadoPorData).sort((a, b) => b.localeCompare(a));
+
+            if (datasOrdenadas.length === 0) {
+                container.innerHTML = `<div class="status-carregando">Nenhum registro para os filtros digitados.</div>`;
+                return;
+            }
+
+            let html = "";
+
+            datasOrdenadas.forEach(dataKey => {
+                const ehHoje = dataKey === dataHoje;
+                if (estadoSanfonaDatas[dataKey] === undefined) {
+                    estadoSanfonaDatas[dataKey] = false; // Inicia recolhido por padrão
+                }
+                const estaAberto = estadoSanfonaDatas[dataKey];
+
+                html += `
+                    <div class="bloco-data-group">
+                        <div class="header-data-toggle" onclick="alternarSanfonaData('${dataKey}')">
+                            <span>📅 Data: ${dataKey} ${ehHoje ? '⭐ (Hoje)' : ''}</span>
+                            <span>${estaAberto ? '➖' : '➕'}</span>
+                        </div>
+                        <div class="conteudo-data-group" style="display: ${estaAberto ? 'block' : 'none'};">
+                `;
+
+                Object.keys(agrupadoPorData[dataKey]).forEach(cliNome => {
+                    const cli = agrupadoPorData[dataKey][cliNome];
+                    const cardId = `card_${dataKey.replace(/\//g, '')}_${cliNome.replace(/[^A-Z0-9]/g, '')}`;
+
+                    // Preserva o que está salvo no LocalStorage, ou inicia com 1 linha em branco se for novo
+                    if (!mapaNFesClientes[cardId] || mapaNFesClientes[cardId].length === 0) {
+                        mapaNFesClientes[cardId] = [{ chave: "", valor: "" }];
+                    }
+
+                    html += `
+                        <div class="card-cliente-resumo" id="${cardId}">
+                            <div class="cliente-titulo">🏢 ${cli.cliente}</div>
+                            <div class="cliente-cnpj">CNPJ: ${cli.cnpj}</div>
+
+                            <div class="linha-campo-croamis">
+                                <label>Pagador do Frete:</label>
+                                <select id="pagador_${cardId}">
+                                    <option value="Destinatario">Destinatário</option>
+                                    <option value="Remetente">Remetente (Matriz)</option>
+                                </select>
+                            </div>
+
+                            <div class="linha-campo-croamis">
+                                <label>Voo de Saída:</label>
+                                <select id="voo_${cardId}">
+                                    <option value="3717">3717 (BSB)</option>
+                                    <option value="3177">3177 (CGH)</option>
+                                    <option value="9139">9139 (CGH)</option>
+                                    <option value="3127">3127 (GRU)</option>
+                                    <option value="9033">9033 (GRU)</option>
+                                </select>
+                            </div>
+
+                            <div class="tag-localizacao">📍 Localização: <strong>${cli.pallet}</strong></div>
+                    `;
+
+                    Object.keys(cli.medidasMap).forEach(med => {
+                        const mData = cli.medidasMap[med];
+                        html += `
+                            <div class="bloco-linha-caixa">
+                                <span>📦 Caixa: <strong>${med}</strong></span>
+                                <div>
+    <strong>${mData.vol} Vol | ${mData.peso.toFixed(1)} Kg</strong>
+    <button class="btn-editar-caixa-resumo" onclick="editarCaixaResumo('${dataKey}', '${cli.cliente}', '${med}')">✏️ Editar</button>
+    <button class="btn-excluir-caixa-resumo" onclick="excluirLotePlanilha('${dataKey}', '${cli.cliente}', '${med}')">🗑️ Excluir</button>
+</div>
+                            </div>
+                        `;
+                    });
+
+                    // Bloco NFs
+                    html += `
+                        <div class="box-nfe-container">
+                            <div class="header-nfe-box">
+                                <span>🔑 Notas Fiscais (NF-e) e Valores:</span>
+                                <button class="btn-add-nf" onclick="adicionarLinhaNF('${cardId}')">➕ Add NF</button>
+                            </div>
+                            <div id="container_nfes_${cardId}">
+                                ${renderizarLinhasNF(cardId)}
+                            </div>
+                        </div>
+
+                        <button class="btn-emitir-latam" onclick="emitirCroamisPeloCard('${cardId}', '${cli.cliente}', '${cli.cnpj}', ${cli.totalVol}, ${cli.totalPeso.toFixed(1)})">
+                            ✈️ Emitir LATAM Consolidado (${cli.totalVol} Vol | ${cli.totalPeso.toFixed(1)} Kg)
+                        </button>
+                    </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function alternarSanfonaData(dataKey) {
+            estadoSanfonaDatas[dataKey] = !estadoSanfonaDatas[dataKey];
+            renderizarResumoComAgrupamento();
+        }
+
+        function renderizarLinhasNF(cardId) {
+            const nfes = mapaNFesClientes[cardId] || [{ chave: "", valor: "" }];
+
+            return nfes.map((nf, idx) => {
+                const chaveValida = nf.chave && nf.chave.length === 44;
+                const estiloBordaChave = nf.chave && nf.chave.length > 0 && !chaveValida ? "border: 2px solid #dc3545;" : "";
+
+                return `
+                    <div class="linha-input-nfe">
+                        <input type="text" 
+                               class="input-chave-nfe" 
+                               placeholder="Chave NF-e (44 dígitos)" 
+                               maxlength="44"
+                               style="${estiloBordaChave}"
+                               value="${nf.chave || ''}" 
+                               oninput="this.value = this.value.replace(/\\D/g, ''); atualizarValorNF('${cardId}', ${idx}, 'chave', this.value)">
+                        
+                        <input type="text" 
+                               class="input-valor-nfe" 
+                               placeholder="Valor (ex: 15000.00)" 
+                               value="${nf.valor || ''}" 
+                               oninput="this.value = tratarInputValor(this.value); atualizarValorNF('${cardId}', ${idx}, 'valor', this.value)">
+                        
+                        ${nfes.length > 1 ? `<button class="btn-remove-nf" onclick="removerLinhaNF('${cardId}', ${idx})">✕</button>` : ''}
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function atualizarValorNF(cardId, index, campo, valor) {
+            if (!mapaNFesClientes[cardId]) {
+                mapaNFesClientes[cardId] = [{ chave: "", valor: "" }];
+            }
+            if (mapaNFesClientes[cardId][index]) {
+                mapaNFesClientes[cardId][index][campo] = valor;
+                salvarCacheNFes(); // Salva no LocalStorage instantaneamente
+            }
+        }
+
+        function adicionarLinhaNF(cardId) {
+            if (!mapaNFesClientes[cardId]) mapaNFesClientes[cardId] = [];
+            mapaNFesClientes[cardId].push({ chave: "", valor: "" });
+            salvarCacheNFes();
+            document.getElementById(`container_nfes_${cardId}`).innerHTML = renderizarLinhasNF(cardId);
+        }
+
+        function removerLinhaNF(cardId, index) {
+            if (mapaNFesClientes[cardId]) {
+                mapaNFesClientes[cardId].splice(index, 1);
+                salvarCacheNFes();
+                document.getElementById(`container_nfes_${cardId}`).innerHTML = renderizarLinhasNF(cardId);
+            }
+        }
+
+        function tratarInputValor(texto) {
+            let limpo = texto.replace(/,/g, ''); // Barre vírgulas
+            limpo = limpo.replace(/[^0-9.]/g, ''); // Aceita apenas números e ponto
+            const partes = limpo.split('.');
+            if (partes.length > 2) {
+                limpo = partes[0] + '.' + partes.slice(1).join('');
+            }
+            return limpo;
+        }
+
+        function editarCaixaResumo(dataStr, clienteNome, medida) {
+            const novoVol = prompt(`Editar Volumes para ${clienteNome} (${medida}):`);
+            if (novoVol === null) return;
+            const novoPeso = prompt(`Editar Peso (Kg) para ${clienteNome} (${medida}):`);
+            if (novoPeso === null) return;
+
+            dadosBrutosGlobal.forEach(item => {
+                let d = item.data ? String(item.data).trim() : "";
+                if (d.includes("T")) d = d.split("T")[0];
+                if (d.includes("-") && d.length >= 10) {
+                    const p = d.substring(0, 10).split("-");
+                    d = `${p[2]}/${p[1]}/${p[0]}`;
+                }
+
+                if (d === dataStr && (item.destinatario || item.nome || "").toUpperCase().trim() === clienteNome && (item.medida || "PADRÃO").toUpperCase().trim() === medida) {
+                    item.quantidade = parseInt(novoVol, 10) || item.quantidade;
+                    item.peso = parseFloat(novoPeso) || item.peso;
+                }
+            });
+
+            renderizarResumoComAgrupamento();
+        }
+
+        function emitirCroamisPeloCard(cardId, cliente, cnpj, totalVol, totalPeso) {
+            const pagador = document.getElementById(`pagador_${cardId}`)?.value || "Destinatario";
+            const voo = document.getElementById(`voo_${cardId}`)?.value || "3717";
+            const nfes = mapaNFesClientes[cardId] || [];
+
+            // Valida se há alguma chave de NF-e com tamanho diferente de 44 dígitos
+            const nfInvalida = nfes.find(n => n.chave && n.chave.trim() !== "" && n.chave.trim().length !== 44);
+            if (nfInvalida) {
+                alert(`⚠️ A chave de NF-e "${nfInvalida.chave}" está incompleta!\nEla deve conter exatamente 44 dígitos.`);
+                return;
+            }
+
+            const listaNfesFormatada = nfes.map(n => ({
+                chaveNfe: (n.chave || "").trim(),
+                valorTotalProduto: (n.valor || "0.00").trim()
+            })).filter(n => n.chaveNfe !== "");
+
+            // 📦 Captura as caixas agrupadas do cliente para passar as dimensões exatas ao CROAMIS
+            const caixasDoCard = [];
+            const cardElement = document.getElementById(cardId);
+            if (cardElement) {
+                const linhasCaixa = cardElement.querySelectorAll('.bloco-linha-caixa');
+                linhasCaixa.forEach(linha => {
+                    const textoCaixa = linha.querySelector('strong')?.innerText || "PADRÃO";
+                    const textoInfo = linha.querySelectorAll('strong')[1]?.innerText || ""; // ex: "2 Vol | 15.0 Kg"
+
+                    const volMatch = textoInfo.match(/(\d+)\s*Vol/i);
+                    const pesoMatch = textoInfo.match(/([\d.]+)\s*Kg/i);
+
+                    const qtd = volMatch ? parseInt(volMatch[1], 10) : 1;
+                    const peso = pesoMatch ? parseFloat(pesoMatch[1]) : totalPeso;
+
+                    // Define dimensões baseadas no nome da caixa/medida
+                    let comp = 60, larg = 39, alt = 33; // Padrão
+                    if (textoCaixa.includes("X")) {
+                        const dim = textoCaixa.split("X");
+                        if (dim.length === 3) {
+                            comp = parseInt(dim[0], 10) || 60;
+                            larg = parseInt(dim[1], 10) || 39;
+                            alt = parseInt(dim[2], 10) || 33;
+                        }
+                    }
+
+                    caixasDoCard.push({
+                        qtd: qtd,
+                        peso: peso,
+                        comp: comp,
+                        larg: larg,
+                        alt: alt
+                    });
+                });
+            }
+
+            const payload = {
+                destinatario: cliente,
+                codigoDestinatario: cnpj,
+                cnpj: cnpj,
+                pagadorFrete: pagador,
+                vooOpcao: voo,
+                pesoBrutoTotal: totalPeso,
+                qtdPecasTotal: totalVol,
+                caixas: caixasDoCard.length > 0 ? caixasDoCard : [
+                    { qtd: totalVol, peso: totalPeso, comp: 60, larg: 39, alt: 33 }
+                ],
+                listaNfes: listaNfesFormatada,
+                chaveNfe: listaNfesFormatada.length > 0 ? listaNfesFormatada[0].chaveNfe : "",
+                valorTotalProduto: listaNfesFormatada.length > 0 ? listaNfesFormatada[0].valorTotalProduto : "0.00"
+            };
+
+            console.log("✈️ Disparando para Extensão do CROAMIS:", payload);
+
+            // Envia para o content.js
+            window.postMessage({
+                tipo: "PREENCHER_CROAMIS",
+                payload: payload
+            }, "*");
+
+            alert(`🚀 Comando de emissão enviado para ${cliente}!\n\n• Pagador: ${pagador}\n• Voo: ${voo}\n• NFs Válidas: ${listaNfesFormatada.length}\n• Total: ${totalVol} Vol | ${totalPeso} Kg`);
+        }
+
+        function emitirTodosLotes() {
+            if (dadosBrutosGlobal.length === 0) {
+                alert("⚠️ Nenhum lote carregado para emitir!");
+                return;
+            }
+            if (!confirm("🚀 Confirma a emissão simultânea de todos os lotes visualizados na tela?")) return;
+
+            const botoesEmitir = document.querySelectorAll('.btn-emitir-latam');
+            botoesEmitir.forEach((btn, idx) => {
+                setTimeout(() => {
+                    btn.click();
+                }, idx * 2500);
+            });
+        }
+
+        async function excluirLotePlanilha(dataStr, clienteNome, medida) {
+            const confirmacao = confirm(`⚠️ Tem certeza que deseja EXCLUIR permanentemente o lote da caixa "${medida}" do cliente ${clienteNome} da planilha?`);
+            if (!confirmacao) return;
+
+            const statusDiv = document.createElement('div');
+            statusDiv.style.cssText = "position: fixed; top: 20px; right: 20px; background: #d93025; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 9999;";
+            statusDiv.innerText = "⏳ Apagando da planilha...";
+            document.body.appendChild(statusDiv);
+
+            try {
+                const payload = JSON.stringify({
+                    acao: "EXCLUIR",
+                    destinatario: clienteNome,
+                    medida: medida
+                });
+
+                await fetch(URL_WEB_APP, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: payload
+                });
+
+                statusDiv.innerText = "✅ Lote excluído da planilha!";
+
+                // Remove do array local para atualizar a tela sem precisar reler a planilha inteira
+                dadosBrutosGlobal = dadosBrutosGlobal.filter(item => {
+                    const c = (item.destinatario || item.nome || "").toUpperCase().trim();
+                    const m = (item.medida || "PADRÃO").toUpperCase().trim();
+                    return !(c === clienteNome.toUpperCase().trim() && m === medida.toUpperCase().trim());
+                });
+
+                setTimeout(() => {
+                    statusDiv.remove();
+                    renderizarResumoComAgrupamento();
+                }, 1200);
+
+            } catch (erro) {
+                console.error("Erro ao excluir lote:", erro);
+                alert("⚠️ Falha ao tentar excluir o lote na planilha.");
+                statusDiv.remove();
+            }
+        }
+    </script>
+</body>
+
+</html>
