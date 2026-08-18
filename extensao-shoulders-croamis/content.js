@@ -162,7 +162,7 @@ async function preencherFormularioCroamis(dados) {
     document.querySelector('input[name*="stateRegistration" i]');
 
   if (campoIE) {
-    // SÓ PREENCHE SE FOR UM DOS 9 SHOPPINGS QUE EXIGEM IE MANUAL
+    // SÓ PREENCHE SE FOR UM DOS SHOPPINGS QUE EXIGEM IE MANUAL
     if (ieDesejada) {
       console.log(`📝 [IE] Aplicando IE manual para o CNPJ ${cnpjApenasDigitos}: ${ieDesejada}`);
       campoIE.removeAttribute('disabled');
@@ -426,8 +426,14 @@ async function preencherFormularioCroamis(dados) {
   let produtoFinal = "ST3BA"; // Padrão geral
 
   // Exceções conhecidas:
-  if (destUpper.includes("SALVADOR") || cnpjDigitos.includes("43470566002052") || cnpjDigitos.includes("43470566007445")) {
-    produtoFinal = "ST2BA"; // SALVADOR SHOPPING -> ST2
+  if (
+    destUpper.includes("SALVADOR") ||
+    destUpper.includes("MACEIO") ||
+    cnpjDigitos.includes("43470566002052") ||
+    cnpjDigitos.includes("43470566007445") ||
+    cnpjDigitos.includes("43470566008093") // MACEIO
+  ) {
+    produtoFinal = "ST2BA"; // SALVADOR SHOPPING & MACEIO -> ST2
   } else if (destUpper.includes("MANAUARA") || cnpjDigitos.includes("43470566010586")) {
     produtoFinal = "ST5BA"; // MANAUARA -> ST5
   }
