@@ -136,6 +136,37 @@
             text-align: left;
         }
 
+        /* 📊 BANNER DE MÉTRICAS DO DIA */
+        .banner-metricas-dia {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #e8f0fe;
+            border: 2px solid #1a73e8;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 6px rgba(26, 115, 232, 0.15);
+        }
+
+        .item-metrica {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metrica-titulo {
+            font-size: 12px;
+            color: #5f6368;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .metrica-valor {
+            font-size: 18px;
+            color: #1a73e8;
+            font-weight: bold;
+        }
+
         .campo-busca-lotes {
             width: 100%;
             padding: 12px;
@@ -364,12 +395,12 @@
 
         <div class="form-manual">
 
-            <!-- CLIENTE -->
             <div class="form-grupo">
                 <label>🏢 Destinatário / Cliente:</label>
                 <div class="linha-selecao-custom">
                     <input type="text" id="manual-cliente-input" list="lista-clientes"
-                        placeholder="🔍 Digite para buscar cliente ou CNPJ...">
+                        placeholder="🔍 Digite para buscar cliente ou CNPJ..."
+                        oninput="validarSelecaoCliente(this.value)">
                     <datalist id="lista-clientes">
                         <option value="BARRA SHOPPING - 43470566004853">
                         <option value="BATEL - 43470566007879">
@@ -409,7 +440,6 @@
                 </div>
             </div>
 
-            <!-- PALLET -->
             <div class="form-grupo">
                 <label>📍 Localização / Palete:</label>
                 <div class="linha-selecao-custom">
@@ -431,7 +461,6 @@
                     style="display: none; margin-top: 8px;">
             </div>
 
-            <!-- MEDIDA -->
             <div class="form-grupo">
                 <label>📦 Tipo de Caixa / Medida:</label>
                 <div class="linha-selecao-custom">
@@ -459,7 +488,6 @@
                 <input type="number" id="manual-peso" step="0.1" placeholder="Ex: 15.0">
             </div>
 
-            <!-- BOTÕES -->
             <button type="button" class="btn-add-caixa" id="btn-add-caixa" onclick="adicionarCaixaAoLoteVisivel()">📦 ➕
                 Adicionar Caixa ao Lote</button>
             <button class="btn-salvar-manual" id="btn-salvar-manual" onclick="confirmarESalvarLotes()">💾 Sincronizar /
@@ -468,10 +496,19 @@
                 onclick="gerarPDFRelatorio()">📄 Imprimir / Salvar PDF do Lote</button>
         </div>
 
-        <!-- LISTA SESSÃO ATUAL AGRUPADA POR PALLET -->
         <div class="secao-lotes-salvos">
-            <h3 style="color: #1a73e8; margin-bottom: 8px;">📋 Lotes Criados (<span id="count-total-lotes">0</span>)
-            </h3>
+
+            <div class="banner-metricas-dia">
+                <div class="item-metrica">
+                    <span class="metrica-titulo">🏢 Clientes Criados</span>
+                    <span class="metrica-valor" id="count-clientes-unicos">0</span>
+                </div>
+                <div class="item-metrica" style="text-align: right;">
+                    <span class="metrica-titulo">⚖️ Peso Total do Dia</span>
+                    <span class="metrica-valor" id="soma-peso-total-dia">0.0 kg</span>
+                </div>
+            </div>
+
             <input type="text" id="busca-lotes" class="campo-busca-lotes"
                 placeholder="🔍 Pesquisar por Cliente, CNPJ ou Pallet..." oninput="renderizarListaDeLotes()">
             <div id="container-lista-lotes"></div>
@@ -524,6 +561,7 @@
         };
 
         let lotesSessaoAtual = [];
+        let ignorarValidacaoDuplicado = false;
 
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('data-atual').innerText = `📅 Data: ${obterDataHoje()}`;
@@ -571,6 +609,20 @@
             return textoInput.split("-")[0].trim().toUpperCase();
         }
 
+        function validarSelecaoCliente(valorInput) {
+            if (ignorarValidacaoDuplicado) return;
+
+            const clienteNome = extrairNomeCliente(valorInput);
+            if (!clienteNome) return;
+
+            const clienteExiste = lotesSessaoAtual.some(item => (item.destinatario || "").toUpperCase() === clienteNome);
+
+            if (clienteExiste) {
+                alert(`⚠️ O destinatário "${clienteNome}" já possui um lote criado abaixo!\n\nPara incluir mais caixas a este cliente, use o botão "➕ Add Caixa" dentro do card dele.`);
+                document.getElementById('manual-cliente-input').value = "";
+            }
+        }
+
         function verificarMedidaCustomizada(select) {
             const custom = document.getElementById('manual-medida-custom');
             custom.style.display = select.value === 'CUSTOM' ? 'block' : 'none';
@@ -582,7 +634,8 @@
         }
 
         function adicionarCaixaAoLoteVisivel() {
-            const clienteStr = document.getElementById('manual-cliente-input').value;
+            const inputCliente = document.getElementById('manual-cliente-input');
+            const clienteStr = inputCliente.value;
             const cliente = extrairNomeCliente(clienteStr);
             if (!cliente) { alert("⚠️ Selecione um cliente!"); return; }
 
@@ -612,15 +665,19 @@
             lotesSessaoAtual.push(item);
             salvarCacheLocal();
 
+            inputCliente.value = "";
             document.getElementById('manual-peso').value = "";
             document.getElementById('manual-qtd').value = "1";
-            document.getElementById('manual-peso').focus();
+            ignorarValidacaoDuplicado = false;
+
+            inputCliente.focus();
         }
 
         function preencherCaixaDiretaCard(cliente, pallet) {
             const inputCliente = document.getElementById('manual-cliente-input');
             const cnpj = mapaCNPJShopping[cliente] || "";
 
+            ignorarValidacaoDuplicado = true;
             inputCliente.value = cnpj ? `${cliente} - ${cnpj}` : cliente;
             document.getElementById('manual-pallet').value = pallet;
 
@@ -644,8 +701,20 @@
 
         function renderizarListaDeLotes() {
             const container = document.getElementById('container-lista-lotes');
-            const countTag = document.getElementById('count-total-lotes');
-            if (countTag) countTag.innerText = lotesSessaoAtual.length;
+            const tagClientesUnicos = document.getElementById('count-clientes-unicos');
+            const tagSomaPesoDia = document.getElementById('soma-peso-total-dia');
+
+            // 🎯 CÁLCULO DE CLIENTES ÚNICOS E PESO TOTAL DO DIA EM TEMPO REAL
+            const conjuntoClientes = new Set();
+            let pesoTotalGeral = 0;
+
+            lotesSessaoAtual.forEach(item => {
+                if (item.destinatario) conjuntoClientes.add(item.destinatario.toUpperCase().trim());
+                pesoTotalGeral += parseFloat(item.peso) || 0;
+            });
+
+            if (tagClientesUnicos) tagClientesUnicos.innerText = conjuntoClientes.size;
+            if (tagSomaPesoDia) tagSomaPesoDia.innerText = `${pesoTotalGeral.toFixed(1)} kg`;
 
             const termoBusca = (document.getElementById('busca-lotes')?.value || "").toLowerCase().trim();
 

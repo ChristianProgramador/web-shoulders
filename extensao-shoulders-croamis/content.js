@@ -14,7 +14,6 @@ if (window.location.href.includes("127.0.0.1") || window.location.href.includes(
   });
 }
 
-// 2. Executa a automação no CROAMIS Cargo
 if (window.location.href.includes("croamis.latamcargo.com")) {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request && request.tipo === "PREENCHER_CROAMIS") {
@@ -29,7 +28,6 @@ function esperar(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// HELPER INFALÍVEL PARA ATRIBUIÇÃO DE VALORES EM INPUTS (Bypassa reatividade de UI)
 function atribuirValorInput(inputElement, valor) {
   if (!inputElement) return;
   const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
@@ -38,7 +36,6 @@ function atribuirValorInput(inputElement, valor) {
   inputElement.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-// Trata e fecha qualquer modal de alerta do CROAMIS (ex: 'Please enter OD')
 async function fecharAlertasModal() {
   const botoesModal = Array.from(document.querySelectorAll('button, input[type="button"], a, .ui-dialog-buttonpane button'));
 
@@ -46,7 +43,7 @@ async function fecharAlertasModal() {
     const texto = (btn.value || btn.innerText || '').trim().toLowerCase();
     if (texto === 'fechar' || texto === 'close' || texto === 'ok') {
       if (btn.offsetWidth > 0 && btn.offsetHeight > 0) {
-        console.log("⚠️ Fechando alerta modal detectado na tela ('Please enter OD')...");
+        console.log("⚠️ Fechando alerta modal detectado na tela...");
         btn.click();
         await esperar(500);
       }
@@ -54,7 +51,6 @@ async function fecharAlertasModal() {
   }
 }
 
-// BUSCA E CONFIRMAÇÃO ESTÁVEL DE CNPJ
 async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
   const escopo = abaId ? document.getElementById(abaId) : document;
   if (!escopo) return;
@@ -71,7 +67,6 @@ async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
   atribuirValorInput(campoCNPJ, cnpjValor);
   await esperar(400);
 
-  // Dispara a busca via Lupa
   const iconeLupa = escopo.querySelector('img[src*="search" i], img[src*="lov" i], img[onclick*="customer" i]') ||
     campoCNPJ.parentElement.querySelector('img');
 
@@ -82,10 +77,8 @@ async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
     campoCNPJ.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  // Tempo de espera para o retorno do serviço da LATAM
   await esperar(2000);
 
-  // Seleciona a linha do resultado na tabela LOV caso a modal abra
   const primeiraLinha = document.querySelector('.jqgrow, tr[role="row"][id="1"], table[id*="lov"] tbody tr:nth-child(2)');
   if (primeiraLinha) {
     primeiraLinha.click();
@@ -103,11 +96,51 @@ async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
   }
 }
 
-// FUNÇÃO PRINCIPAL DE PREENCHIMENTO COMPLETO
+// 🛍️ TRATATIVA DE CEP E NÚMERO (COM ID REAL REVELADO NO DEVTOOLS: buttonFiveDialogOK)
+async function tratarManairaShopping(escopo) {
+  console.log("🛍️ Executando tratativa de CEP + Número para MANAIRA SHOPPING...");
+
+  // 1. Lupa do CEP
+  const lupaCEP = escopo.querySelector('#lovZipCode, img[onclick*="ZipCode" i], img[src*="search" i][id*="Zip" i]');
+  if (lupaCEP) {
+    lupaCEP.click();
+    await esperar(1500);
+  }
+
+  // 2. Linha do CEP
+  const linhaCEP = document.querySelector('table[id*="zip" i] tbody tr:nth-child(2), .ui-jqgrid-btable tr.jqgrow');
+  if (linhaCEP) {
+    linhaCEP.click();
+    await esperar(400);
+  }
+
+  // 3. Botão OK do CEP (ID exato extraído do seu DevTools: buttonFiveDialogOK)
+  const btnOkCEP = document.getElementById('buttonFiveDialogOK') ||
+    document.getElementById('lovDialogOK') ||
+    Array.from(document.querySelectorAll('button')).find(b => b.innerText.trim().toUpperCase() === 'OK' && b.offsetWidth > 0);
+
+  if (btnOkCEP) {
+    btnOkCEP.click();
+    await esperar(1000);
+  }
+
+  // 4. Preenche Número (220)
+  const campoNumero = escopo.querySelector('#buildingNumber, input[name*="buildingNumber" i]');
+  if (campoNumero) {
+    campoNumero.removeAttribute('disabled');
+    campoNumero.removeAttribute('readonly');
+    campoNumero.focus();
+    campoNumero.click();
+    atribuirValorInput(campoNumero, "220");
+    await esperar(300);
+    campoNumero.dispatchEvent(new Event('blur', { bubbles: true }));
+    console.log("✅ [MANAIRA] Número 220 gravado com sucesso!");
+  }
+}
+
 async function preencherFormularioCroamis(dados) {
   console.log("⚡ Executando automação no CROAMIS para:", dados);
 
-  // 1. Checkbox Entrega
   const chkEntrega = document.getElementById('entrega');
   if (chkEntrega && !chkEntrega.checked) {
     chkEntrega.click();
@@ -116,15 +149,15 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(200);
 
-  // 🎯 Captura inteligente do Pagador (Aceita dados.pagador ou dados.pagadorFrete)
   const pagadorTexto = String(dados.pagador || dados.pagadorFrete || "").toUpperCase();
   const ehPagadorMatriz = pagadorTexto.includes("REMETENTE");
 
   const cnpjMatriz = "43470566002567";
   const cnpjCliente = String(dados.codigoDestinatario || dados.cnpj || "").replace(/\D/g, '');
+  const nomeCliente = String(dados.destinatario || dados.nome || "").toUpperCase();
 
   // -----------------------------------------------------------
-  // PASSO A: TOMADOR (PAGADOR DO FRETE)
+  // PASSO A: TOMADOR
   // -----------------------------------------------------------
   const tabTomador = document.querySelector('#tabHeader_1 a') || document.getElementById('tabHeader_1');
   if (tabTomador) {
@@ -139,63 +172,49 @@ async function preencherFormularioCroamis(dados) {
     await esperar(300);
   }
 
-  // Se for Remetente/Matriz, injeta a Matriz. Se for Destinatário, injeta o Cliente
   const cnpjTomador = ehPagadorMatriz ? cnpjMatriz : cnpjCliente;
   if (cnpjTomador) {
-    console.log(`💳 [Tomador] Injetando CNPJ ${cnpjTomador} (Tipo: ${ehPagadorMatriz ? "Remetente/Matriz" : "Destinatário"})...`);
+    console.log(`💳 [Tomador] Injetando CNPJ ${cnpjTomador}...`);
     await preencherEBuscarCNPJ(cnpjTomador, 'tabpage_1');
   }
 
   await esperar(1200);
 
-  // -----------------------------------------------------------
-  // MAPA E PREENCHIMENTO DE INSCRIÇÃO ESTADUAL (SOMENTE QUANDO NECESSÁRIO)
-  // -----------------------------------------------------------
+  // Se o Tomador for o Cliente e for MANAIRA SHOPPING, trata o CEP/Número na Aba 1
+  if (!ehPagadorMatriz && (cnpjCliente === "43470566008689" || nomeCliente.includes("MANAIRA"))) {
+    await tratarManairaShopping(document.getElementById('tabpage_1') || document);
+  }
+
+  // IE
   const mapaIEPorCNPJ = {
-    "43470566003296": "064152774", // IGUATEMI FORTALEZA
-    "43470566008760": "271772492", // RIO MAR ARACAJU
-    "43470566009227": "158221702", // BOULEVARD BELEM
-    "43470566002052": "74074254",  // SALVADOR SHOPPING
-    "43470566010586": "054566657", // MANAUARA
-    "43470566011043": "206572883", // MIDWAY
-    "43470566005906": "063600323", // RIO MAR FORTALEZA
-    "43470566008506": "205226973", // NATAL
-    "43470566009146": "158221710"  // SHOPPING GRAO PARA
+    "43470566003296": "064152774",
+    "43470566008760": "271772492",
+    "43470566009227": "158221702",
+    "43470566002052": "74074254",
+    "43470566010586": "054566657",
+    "43470566011043": "206572883",
+    "43470566005906": "063600323",
+    "43470566008506": "205226973",
+    "43470566009146": "158221710"
   };
 
   const ieDesejada = mapaIEPorCNPJ[cnpjCliente];
+  const campoIE = document.querySelector('#tabpage_1 #stateRegistration') || document.getElementById('stateRegistration');
 
-  const campoIE = document.querySelector('#tabpage_1 #stateRegistration') ||
-    document.getElementById('stateRegistration') ||
-    document.querySelector('input[name*="stateRegistration" i]');
-
-  if (campoIE) {
-    if (ieDesejada) {
-      console.log(`📝 [IE] Aplicando IE manual para o CNPJ ${cnpjCliente}: ${ieDesejada}`);
-      campoIE.removeAttribute('disabled');
-      campoIE.removeAttribute('readonly');
-      campoIE.focus();
-      campoIE.click();
-      campoIE.value = ieDesejada;
-      atribuirValorInput(campoIE, ieDesejada);
-
-      await esperar(200);
-      campoIE.dispatchEvent(new Event('input', { bubbles: true }));
-      campoIE.dispatchEvent(new Event('change', { bubbles: true }));
-      campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
-    } else {
-      console.log(`✅ [IE] Cliente isento/nativo. Mantendo IE original da tela: "${campoIE.value || 'Vazia'}"`);
-    }
+  if (campoIE && ieDesejada) {
+    campoIE.removeAttribute('disabled');
+    campoIE.removeAttribute('readonly');
+    campoIE.focus();
+    atribuirValorInput(campoIE, ieDesejada);
+    await esperar(200);
+    campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  // -----------------------------------------------------------
-  // CHECKBOX DE ALOCAÇÃO NO TOMADOR (REMETENTE OU DESTINATÁRIO)
-  // -----------------------------------------------------------
+  // Alocação
   const valorChkAlocacao = ehPagadorMatriz ? "Remetente" : "Destinatario";
   const chkAlocacao = document.querySelector(`#tabpage_1 input[value="${valorChkAlocacao}"], #tabpage_1 input[id*="${valorChkAlocacao}"]`);
 
   if (chkAlocacao && !chkAlocacao.checked) {
-    console.log(`☑️ [Alocação] Marcando checkbox: ${valorChkAlocacao}`);
     chkAlocacao.click();
     chkAlocacao.checked = true;
     chkAlocacao.dispatchEvent(new Event('change', { bubbles: true }));
@@ -204,7 +223,7 @@ async function preencherFormularioCroamis(dados) {
   await esperar(1000);
 
   // -----------------------------------------------------------
-  // PASSO B: REMETENTE OU DESTINATÁRIO (SEGUNDA PONTA)
+  // PASSO B: SEGUNDA PONTA (REMETENTE OU DESTINATÁRIO)
   // -----------------------------------------------------------
   const tabRemetente = document.querySelector('#tabHeader_2 a') || document.getElementById('tabHeader_2');
   if (tabRemetente) {
@@ -219,11 +238,17 @@ async function preencherFormularioCroamis(dados) {
     await esperar(300);
   }
 
-  // Na segunda ponta, inverte: se Tomador foi Matriz, aqui vai o Cliente (e vice-versa)
   const cnpjSegundaPonta = ehPagadorMatriz ? cnpjCliente : cnpjMatriz;
   if (cnpjSegundaPonta) {
     console.log(`🏭 [Segunda Ponta] Injetando CNPJ ${cnpjSegundaPonta}...`);
     await preencherEBuscarCNPJ(cnpjSegundaPonta, 'tabpage_2');
+  }
+
+  await esperar(1200);
+
+  // Se a segunda ponta for o MANAIRA SHOPPING (quando Tomador é Remetente), trata CEP/Número na Aba 2
+  if (ehPagadorMatriz && (cnpjCliente === "43470566008689" || nomeCliente.includes("MANAIRA"))) {
+    await tratarManairaShopping(document.getElementById('tabpage_2') || document);
   }
 
   await esperar(500);
@@ -231,8 +256,6 @@ async function preencherFormularioCroamis(dados) {
   // -----------------------------------------------------------
   // PASSO C: ORIGEM, COMMODITY E HANDLING
   // -----------------------------------------------------------
-  await esperar(400);
-
   const campoOrigin = document.getElementById('origin');
   if (campoOrigin) {
     campoOrigin.focus();
@@ -241,17 +264,13 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(200);
 
-  const campoCmdty = document.getElementById('commodityCode') ||
-    document.getElementById('inputCommodityCode') ||
-    document.querySelector('input[name*="commodityCode" i]');
-
+  const campoCmdty = document.getElementById('commodityCode') || document.getElementById('inputCommodityCode');
   if (campoCmdty) {
     campoCmdty.focus();
     campoCmdty.click();
 
     if (window.$ || window.jQuery) {
-      const $input = (window.$ || window.jQuery)(campoCmdty);
-      $input.val("0611").trigger("input").trigger("change").trigger("keydown");
+      (window.$ || window.jQuery)(campoCmdty).val("0611").trigger("input").trigger("change").trigger("keydown");
     } else {
       atribuirValorInput(campoCmdty, "0611");
     }
@@ -259,41 +278,28 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(300);
 
-  const campoNature = document.getElementById('natureOfGoods') ||
-    document.querySelector('input[id*="natureOfGoods" i]');
-
+  const campoNature = document.getElementById('natureOfGoods');
   if (campoNature) {
     campoNature.focus();
     campoNature.click();
-    if (campoCmdty) {
-      campoCmdty.dispatchEvent(new Event('blur', { bubbles: true }));
-      if (window.$ || window.jQuery) {
-        (window.$ || window.jQuery)(campoCmdty).trigger("blur");
-      }
-    }
+    if (campoCmdty) campoCmdty.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
   await esperar(400);
 
-  const campoHandling = document.getElementById('handlingCode') ||
-    document.querySelector('input[name="handlingCode" i]');
-
+  const campoHandling = document.getElementById('handlingCode');
   if (campoHandling) {
     campoHandling.focus();
     campoHandling.click();
 
     if (window.$ || window.jQuery) {
-      const $handling = (window.$ || window.jQuery)(campoHandling);
-      $handling.val("99").trigger("input").trigger("change").trigger("keydown");
+      (window.$ || window.jQuery)(campoHandling).val("99").trigger("input").trigger("change").trigger("keydown");
     } else {
       atribuirValorInput(campoHandling, "99");
     }
 
     await esperar(150);
     campoHandling.dispatchEvent(new Event('blur', { bubbles: true }));
-    if (window.$ || window.jQuery) {
-      (window.$ || window.jQuery)(campoHandling).trigger("blur");
-    }
   }
 
   await esperar(500);
@@ -301,26 +307,21 @@ async function preencherFormularioCroamis(dados) {
   // ===========================================================
   // PASSO 3: DIMENSÕES (DIMS AND ULD)
   // ===========================================================
-  console.log("📐 Executando PASSO 3 (Abrindo Dimensões / Dims and ULD)...");
-
   const btnOpenDims = document.getElementById('openDimsAndUld');
   if (btnOpenDims) {
     btnOpenDims.click();
-
     await esperar(2000);
 
     const caixas = dados.caixas && dados.caixas.length > 0 ? dados.caixas : [
       { qtd: dados.qtdPecasTotal || 1, peso: dados.pesoBrutoTotal || 15.6, comp: 60, larg: 39, alt: 33 }
     ];
 
-    const tdAdd = document.getElementById('dimsAndUldloosePiecesGridA') ||
-      document.querySelector('td[id*="loosePiecesGridA" i]');
+    const tdAdd = document.getElementById('dimsAndUldloosePiecesGridA') || document.querySelector('td[id*="loosePiecesGridA" i]');
 
     for (let i = 0; i < caixas.length; i++) {
       const c = caixas[i];
 
       if (tdAdd) {
-        console.log("➕ Clicando no Add...");
         const divInterna = tdAdd.querySelector('.ui-pg-div') || tdAdd;
         divInterna.click();
         await esperar(1000);
@@ -331,9 +332,7 @@ async function preencherFormularioCroamis(dados) {
       if (window.$ || window.jQuery) {
         try {
           (window.$ || window.jQuery)('#loosePiecesGrid').jqGrid('editRow', idLinha, true);
-        } catch (err) {
-          console.log("editRow executado.");
-        }
+        } catch (err) { }
       }
 
       await esperar(400);
@@ -345,7 +344,6 @@ async function preencherFormularioCroamis(dados) {
         if (!linhaTr) return;
 
         const td = linhaTr.querySelector(`td[aria-describedby*="${sufixoColuna}" i]`);
-
         if (td) {
           td.click();
           await esperar(150);
@@ -382,9 +380,7 @@ async function preencherFormularioCroamis(dados) {
       if (window.$ || window.jQuery) {
         try {
           (window.$ || window.jQuery)('#loosePiecesGrid').jqGrid('saveRow', idLinha);
-        } catch (err) {
-          console.log("saveRow executado.");
-        }
+        } catch (err) { }
       }
 
       await esperar(500);
@@ -392,11 +388,9 @@ async function preencherFormularioCroamis(dados) {
 
     await esperar(800);
 
-    const btnSaveDims = document.getElementById('buttonSaveLooseAndUldDetails') ||
-      document.getElementById('dimsUldSave');
+    const btnSaveDims = document.getElementById('buttonSaveLooseAndUldDetails') || document.getElementById('dimsUldSave');
 
     if (btnSaveDims) {
-      console.log("💾 Clicando em Save & Continue...");
       btnSaveDims.click();
     }
   }
@@ -405,10 +399,8 @@ async function preencherFormularioCroamis(dados) {
   await esperar(800);
 
   // ===========================================================
-  // PASSO 4: TRATAMENTO -> SERVIÇO -> PRODUTO (MAPA EXATO POR DESTINO)
+  // PASSO 4: TRATAMENTO -> SERVIÇO -> PRODUTO
   // ===========================================================
-  console.log("⚡ Executando PASSO 4 via Injeção Direta por Destino...");
-
   const campoTreatment = document.getElementById('treatment') || document.querySelector('input[name*="treatment" i], select[name*="treatment" i]');
   if (campoTreatment) {
     if (campoTreatment.tagName === 'SELECT') {
@@ -431,32 +423,24 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(400);
 
-  const destUpper = String(dados.destinatario || dados.nome || "").toUpperCase();
-  const cnpjDigitos = String(dados.codigoDestinatario || dados.cnpj || "").replace(/\D/g, '');
-
   let produtoFinal = "ST3BA";
-
   if (
-    destUpper.includes("SALVADOR") ||
-    destUpper.includes("MACEIO") ||
-    destUpper.includes("NATAL") ||
-    destUpper.includes("MIDWAY") ||
-    cnpjDigitos.includes("43470566002052") ||
-    cnpjDigitos.includes("43470566007445") ||
-    cnpjDigitos.includes("43470566008093") ||
-    cnpjDigitos.includes("43470566008506") ||
-    cnpjDigitos.includes("43470566011043")
+    nomeCliente.includes("SALVADOR") ||
+    nomeCliente.includes("MACEIO") ||
+    nomeCliente.includes("NATAL") ||
+    nomeCliente.includes("MIDWAY") ||
+    cnpjCliente.includes("43470566002052") ||
+    cnpjCliente.includes("43470566007445") ||
+    cnpjCliente.includes("43470566008093") ||
+    cnpjCliente.includes("43470566008506") ||
+    cnpjCliente.includes("43470566011043")
   ) {
     produtoFinal = "ST2BA";
-  } else if (destUpper.includes("MANAUARA") || cnpjDigitos.includes("43470566010586")) {
+  } else if (nomeCliente.includes("MANAUARA") || cnpjCliente.includes("43470566010586")) {
     produtoFinal = "ST5BA";
   }
 
-  console.log(`✈️ [Produto] Injetando código "${produtoFinal}" para ${destUpper || cnpjDigitos}...`);
-
-  const elProduct = document.getElementById('productCode') ||
-    document.getElementById('product') ||
-    document.querySelector('input[name*="product" i]');
+  const elProduct = document.getElementById('productCode') || document.getElementById('product');
 
   if (elProduct) {
     elProduct.focus();
@@ -470,9 +454,6 @@ async function preencherFormularioCroamis(dados) {
 
     await esperar(300);
     elProduct.dispatchEvent(new Event('blur', { bubbles: true }));
-    if (window.$ || window.jQuery) {
-      (window.$ || window.jQuery)(elProduct).trigger("blur");
-    }
   }
 
   await esperar(500);
@@ -480,14 +461,11 @@ async function preencherFormularioCroamis(dados) {
   // ===========================================================
   // PASSO 5: NOTA FISCAL (e-Doc -> NF Electronic -> GRID)
   // ===========================================================
-  console.log("📄 Preenchendo Notas Fiscais no CROAMIS...");
-
   const listaNfes = (dados.listaNfes && dados.listaNfes.length > 0) ? dados.listaNfes : [
     { chaveNfe: dados.chaveNfe || "", valorTotalProduto: dados.valorTotalProduto || "0" }
   ];
 
-  const abaEdoc = document.querySelector('div[data-tab="slidetab5"]') ||
-    document.querySelector('p[title="e-Doc"]');
+  const abaEdoc = document.querySelector('div[data-tab="slidetab5"]') || document.querySelector('p[title="e-Doc"]');
   if (abaEdoc) {
     abaEdoc.click();
     await esperar(800);
@@ -502,7 +480,6 @@ async function preencherFormularioCroamis(dados) {
 
   for (let i = 0; i < listaNfes.length; i++) {
     const nf = listaNfes[i];
-    console.log(`📝 Processando NF #${i + 1} de ${listaNfes.length}: Chave=${nf.chaveNfe} | Valor=${nf.valorTotalProduto}`);
 
     let valorFormatado = String(nf.valorTotalProduto || "0").replace(',', '.');
     valorFormatado = parseFloat(valorFormatado).toFixed(2);
@@ -518,14 +495,10 @@ async function preencherFormularioCroamis(dados) {
 
     let trAtual = null;
     let tentativas = 0;
-    const maxTentativas = 10;
-
-    while (tentativas < maxTentativas) {
+    while (tentativas < 10) {
       const linhasGrid = document.querySelectorAll('#NFElectronicGrid tr.jqgrow, #NFElectronicGrid tr[role="row"]:not(.jqgfirstrow)');
       trAtual = linhasGrid[i] || linhasGrid[linhasGrid.length - 1];
-
       if (trAtual) break;
-
       tentativas++;
       await esperar(500);
     }
@@ -548,8 +521,7 @@ async function preencherFormularioCroamis(dados) {
       await esperar(200);
     }
 
-    let inputChave = document.getElementById(`${idLinhaReal}_accessKey`) ||
-      (tdChave ? tdChave.querySelector('input') : null);
+    let inputChave = document.getElementById(`${idLinhaReal}_accessKey`) || (tdChave ? tdChave.querySelector('input') : null);
 
     if (inputChave) {
       inputChave.focus();
@@ -574,8 +546,7 @@ async function preencherFormularioCroamis(dados) {
       await esperar(300);
     }
 
-    let inputValor = document.getElementById(`${idLinhaReal}_cargoValue`) ||
-      (tdValor ? tdValor.querySelector('input') : null);
+    let inputValor = document.getElementById(`${idLinhaReal}_cargoValue`) || (tdValor ? tdValor.querySelector('input') : null);
 
     if (inputValor) {
       inputValor.focus();
@@ -606,13 +577,8 @@ async function preencherFormularioCroamis(dados) {
   await esperar(500);
 
   // ===========================================================
-  // PASSO 6: AD-VALOREM (Customer) + SEGURO (AKAD SEGUROS)
+  // PASSO 6: AD-VALOREM + SEGURO
   // ===========================================================
-  console.log("🛡️ Selecionando Ad-Valorem (Customer)...");
-
-  if (document.activeElement) document.activeElement.blur();
-  await esperar(400);
-
   const selectAdValorem = document.getElementById('insurance');
 
   if (selectAdValorem) {
@@ -652,24 +618,8 @@ async function preencherFormularioCroamis(dados) {
 
   if (btnOkInsurance) {
     btnOkInsurance.focus();
-    btnOkInsurance.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    btnOkInsurance.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
     btnOkInsurance.click();
     await esperar(500);
-  }
-
-  if (window.$ || window.jQuery) {
-    try {
-      const $dialog = (window.$ || window.jQuery)('#adValoremPopup');
-      if ($dialog.length && $dialog.is(':visible')) {
-        const buttons = $dialog.dialog('option', 'buttons');
-        if (buttons && typeof buttons === 'object') {
-          const firstKey = Object.keys(buttons)[0];
-          if (buttons[firstKey]) buttons[firstKey].apply($dialog[0]);
-        }
-        $dialog.dialog('close');
-      }
-    } catch (e) { }
   }
 
   await esperar(800);
@@ -677,8 +627,6 @@ async function preencherFormularioCroamis(dados) {
   // ===========================================================
   // PASSO 7: ITINERÁRIO DE VOO
   // ===========================================================
-  console.log("✈️ Preenchendo Itinerário de Voo com dados recebidos:", dados);
-
   if (document.activeElement) document.activeElement.blur();
   await esperar(300);
 
@@ -688,8 +636,7 @@ async function preencherFormularioCroamis(dados) {
     await esperar(400);
   }
 
-  const inputDestinoObj = document.getElementById('destination') ||
-    document.querySelector('input[name*="destination" i]');
+  const inputDestinoObj = document.getElementById('destination') || document.querySelector('input[name*="destination" i]');
   const destinoFinal = inputDestinoObj ? inputDestinoObj.value.trim().toUpperCase() : "REC";
 
   const vooOpcaoUser = String(dados.vooOpcao || "3717").trim().toUpperCase();
@@ -833,7 +780,7 @@ async function preencherFormularioCroamis(dados) {
   await esperar(600);
 
   // ===========================================================
-  // PASSO 8: CLIQUE INFALÍVEL EM EMITIR CTE + OVERRIDE
+  // PASSO 8: CLIQUE EM EMITIR CTE + OVERRIDE
   // ===========================================================
   if (document.activeElement) document.activeElement.blur();
   await esperar(1000);
@@ -875,16 +822,6 @@ async function preencherFormularioCroamis(dados) {
 
   if (btnEmitirCte) {
     btnEmitirCte.focus();
-
-    try {
-      if (window.$ || window.jQuery) {
-        (window.$ || window.jQuery)(btnEmitirCte).trigger("click");
-      }
-    } catch (e) { }
-
-    btnEmitirCte.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    btnEmitirCte.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-    btnEmitirCte.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     btnEmitirCte.click();
   }
 
@@ -911,7 +848,6 @@ async function preencherFormularioCroamis(dados) {
   }
 
   const btnOverride = buscarBtnOverride();
-
   if (btnOverride) {
     btnOverride.focus();
     btnOverride.click();
