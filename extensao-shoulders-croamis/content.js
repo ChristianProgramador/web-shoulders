@@ -116,8 +116,15 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(200);
 
+  // 🎯 Captura inteligente do Pagador (Aceita dados.pagador ou dados.pagadorFrete)
+  const pagadorTexto = String(dados.pagador || dados.pagadorFrete || "").toUpperCase();
+  const ehPagadorMatriz = pagadorTexto.includes("REMETENTE");
+
+  const cnpjMatriz = "43470566002567";
+  const cnpjCliente = String(dados.codigoDestinatario || dados.cnpj || "").replace(/\D/g, '');
+
   // -----------------------------------------------------------
-  // PASSO A: TOMADOR & ALOCAÇÃO DO DESTINATÁRIO + INSCRIÇÃO ESTADUAL
+  // PASSO A: TOMADOR (PAGADOR DO FRETE)
   // -----------------------------------------------------------
   const tabTomador = document.querySelector('#tabHeader_1 a') || document.getElementById('tabHeader_1');
   if (tabTomador) {
@@ -132,12 +139,14 @@ async function preencherFormularioCroamis(dados) {
     await esperar(300);
   }
 
-  const cnpjCliente = String(dados.codigoDestinatario || dados.cnpj || "");
-  if (cnpjCliente) {
-    await preencherEBuscarCNPJ(cnpjCliente, 'tabpage_1');
+  // Se for Remetente/Matriz, injeta a Matriz. Se for Destinatário, injeta o Cliente
+  const cnpjTomador = ehPagadorMatriz ? cnpjMatriz : cnpjCliente;
+  if (cnpjTomador) {
+    console.log(`💳 [Tomador] Injetando CNPJ ${cnpjTomador} (Tipo: ${ehPagadorMatriz ? "Remetente/Matriz" : "Destinatário"})...`);
+    await preencherEBuscarCNPJ(cnpjTomador, 'tabpage_1');
   }
 
-  await esperar(1200); // Aguarda o CROAMIS preencher os dados nativos do cliente
+  await esperar(1200);
 
   // -----------------------------------------------------------
   // MAPA E PREENCHIMENTO DE INSCRIÇÃO ESTADUAL (SOMENTE QUANDO NECESSÁRIO)
@@ -154,17 +163,15 @@ async function preencherFormularioCroamis(dados) {
     "43470566009146": "158221710"  // SHOPPING GRAO PARA
   };
 
-  const cnpjApenasDigitos = cnpjCliente.replace(/\D/g, '');
-  const ieDesejada = mapaIEPorCNPJ[cnpjApenasDigitos];
+  const ieDesejada = mapaIEPorCNPJ[cnpjCliente];
 
   const campoIE = document.querySelector('#tabpage_1 #stateRegistration') ||
     document.getElementById('stateRegistration') ||
     document.querySelector('input[name*="stateRegistration" i]');
 
   if (campoIE) {
-    // SÓ PREENCHE SE FOR UM DOS SHOPPINGS QUE EXIGEM IE MANUAL
     if (ieDesejada) {
-      console.log(`📝 [IE] Aplicando IE manual para o CNPJ ${cnpjApenasDigitos}: ${ieDesejada}`);
+      console.log(`📝 [IE] Aplicando IE manual para o CNPJ ${cnpjCliente}: ${ieDesejada}`);
       campoIE.removeAttribute('disabled');
       campoIE.removeAttribute('readonly');
       campoIE.focus();
@@ -177,24 +184,27 @@ async function preencherFormularioCroamis(dados) {
       campoIE.dispatchEvent(new Event('change', { bubbles: true }));
       campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
     } else {
-      // PARA MANAÍRA, RECIFE E DEMAIS: PRESERVA A IE NATIVA DO CROAMIS SEM APAGAR NADA
       console.log(`✅ [IE] Cliente isento/nativo. Mantendo IE original da tela: "${campoIE.value || 'Vazia'}"`);
     }
   }
 
   // -----------------------------------------------------------
-  // ALOCAÇÃO DO DESTINATÁRIO (CHECKBOX)
+  // CHECKBOX DE ALOCAÇÃO NO TOMADOR (REMETENTE OU DESTINATÁRIO)
   // -----------------------------------------------------------
-  const chkDestinatario = document.querySelector('#tabpage_1 input[value="Destinatario"], #tabpage_1 input[id*="Destinatario"]');
-  if (chkDestinatario && !chkDestinatario.checked) {
-    chkDestinatario.click();
-    chkDestinatario.checked = true;
-    chkDestinatario.dispatchEvent(new Event('change', { bubbles: true }));
+  const valorChkAlocacao = ehPagadorMatriz ? "Remetente" : "Destinatario";
+  const chkAlocacao = document.querySelector(`#tabpage_1 input[value="${valorChkAlocacao}"], #tabpage_1 input[id*="${valorChkAlocacao}"]`);
+
+  if (chkAlocacao && !chkAlocacao.checked) {
+    console.log(`☑️ [Alocação] Marcando checkbox: ${valorChkAlocacao}`);
+    chkAlocacao.click();
+    chkAlocacao.checked = true;
+    chkAlocacao.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   await esperar(1000);
+
   // -----------------------------------------------------------
-  // PASSO B: REMETENTE (MATRIZ)
+  // PASSO B: REMETENTE OU DESTINATÁRIO (SEGUNDA PONTA)
   // -----------------------------------------------------------
   const tabRemetente = document.querySelector('#tabHeader_2 a') || document.getElementById('tabHeader_2');
   if (tabRemetente) {
@@ -209,8 +219,12 @@ async function preencherFormularioCroamis(dados) {
     await esperar(300);
   }
 
-  const cnpjMatriz = "43470566002567";
-  await preencherEBuscarCNPJ(cnpjMatriz, 'tabpage_2');
+  // Na segunda ponta, inverte: se Tomador foi Matriz, aqui vai o Cliente (e vice-versa)
+  const cnpjSegundaPonta = ehPagadorMatriz ? cnpjCliente : cnpjMatriz;
+  if (cnpjSegundaPonta) {
+    console.log(`🏭 [Segunda Ponta] Injetando CNPJ ${cnpjSegundaPonta}...`);
+    await preencherEBuscarCNPJ(cnpjSegundaPonta, 'tabpage_2');
+  }
 
   await esperar(500);
 
@@ -387,7 +401,6 @@ async function preencherFormularioCroamis(dados) {
     }
   }
 
-  // Trata e fecha o alerta modal (ex: 'Please enter OD') se tiver aparecido
   await fecharAlertasModal();
   await esperar(800);
 
@@ -396,7 +409,6 @@ async function preencherFormularioCroamis(dados) {
   // ===========================================================
   console.log("⚡ Executando PASSO 4 via Injeção Direta por Destino...");
 
-  // 1. Preenche Tratamento e Serviço
   const campoTreatment = document.getElementById('treatment') || document.querySelector('input[name*="treatment" i], select[name*="treatment" i]');
   if (campoTreatment) {
     if (campoTreatment.tagName === 'SELECT') {
@@ -419,28 +431,29 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(400);
 
-  // 2. Mapeamento do Código de Produto por Destino / CNPJ
   const destUpper = String(dados.destinatario || dados.nome || "").toUpperCase();
   const cnpjDigitos = String(dados.codigoDestinatario || dados.cnpj || "").replace(/\D/g, '');
 
-  let produtoFinal = "ST3BA"; // Padrão geral
+  let produtoFinal = "ST3BA";
 
-  // Exceções conhecidas:
   if (
     destUpper.includes("SALVADOR") ||
     destUpper.includes("MACEIO") ||
+    destUpper.includes("NATAL") ||
+    destUpper.includes("MIDWAY") ||
     cnpjDigitos.includes("43470566002052") ||
     cnpjDigitos.includes("43470566007445") ||
-    cnpjDigitos.includes("43470566008093") // MACEIO
+    cnpjDigitos.includes("43470566008093") ||
+    cnpjDigitos.includes("43470566008506") ||
+    cnpjDigitos.includes("43470566011043")
   ) {
-    produtoFinal = "ST2BA"; // SALVADOR SHOPPING & MACEIO -> ST2
+    produtoFinal = "ST2BA";
   } else if (destUpper.includes("MANAUARA") || cnpjDigitos.includes("43470566010586")) {
-    produtoFinal = "ST5BA"; // MANAUARA -> ST5
+    produtoFinal = "ST5BA";
   }
 
   console.log(`✈️ [Produto] Injetando código "${produtoFinal}" para ${destUpper || cnpjDigitos}...`);
 
-  // 3. Aplicação do Produto no campo do CROAMIS
   const elProduct = document.getElementById('productCode') ||
     document.getElementById('product') ||
     document.querySelector('input[name*="product" i]');
@@ -463,7 +476,6 @@ async function preencherFormularioCroamis(dados) {
   }
 
   await esperar(500);
-  console.log("🚀 PASSO 4 concluído com sucesso!");
 
   // ===========================================================
   // PASSO 5: NOTA FISCAL (e-Doc -> NF Electronic -> GRID)
@@ -515,14 +527,10 @@ async function preencherFormularioCroamis(dados) {
       if (trAtual) break;
 
       tentativas++;
-      console.log(`⏳ Aguardando renderização da linha NF #${i + 1} (Tentativa ${tentativas}/${maxTentativas})...`);
       await esperar(500);
     }
 
-    if (!trAtual) {
-      console.warn(`⚠️ Linha para a NF #${i + 1} não foi localizada no grid após o tempo limite.`);
-      continue;
-    }
+    if (!trAtual) continue;
 
     const idLinhaReal = trAtual.getAttribute('id');
 
@@ -594,9 +602,7 @@ async function preencherFormularioCroamis(dados) {
     await esperar(600);
   }
 
-  if (document.activeElement) {
-    document.activeElement.blur();
-  }
+  if (document.activeElement) document.activeElement.blur();
   await esperar(500);
 
   // ===========================================================
@@ -604,9 +610,7 @@ async function preencherFormularioCroamis(dados) {
   // ===========================================================
   console.log("🛡️ Selecionando Ad-Valorem (Customer)...");
 
-  if (document.activeElement) {
-    document.activeElement.blur();
-  }
+  if (document.activeElement) document.activeElement.blur();
   await esperar(400);
 
   const selectAdValorem = document.getElementById('insurance');
@@ -640,8 +644,6 @@ async function preencherFormularioCroamis(dados) {
     await esperar(300);
   }
 
-  console.log("🔘 Confirmando Modal de Seguro...");
-
   const popupAdValorem = document.getElementById('adValoremPopup') ?
     document.getElementById('adValoremPopup').closest('.ui-dialog') : document;
 
@@ -667,13 +669,10 @@ async function preencherFormularioCroamis(dados) {
         }
         $dialog.dialog('close');
       }
-    } catch (e) {
-      console.log("Diálogo fechado via evento nativo.");
-    }
+    } catch (e) { }
   }
 
   await esperar(800);
-  console.log("🎉 SEGURO E AD-VALOREM PROCESSADOS!");
 
   // ===========================================================
   // PASSO 7: ITINERÁRIO DE VOO
@@ -689,12 +688,10 @@ async function preencherFormularioCroamis(dados) {
     await esperar(400);
   }
 
-  // Destino Final
   const inputDestinoObj = document.getElementById('destination') ||
     document.querySelector('input[name*="destination" i]');
   const destinoFinal = inputDestinoObj ? inputDestinoObj.value.trim().toUpperCase() : "REC";
 
-  // Captura exata do voo selecionado
   const vooOpcaoUser = String(dados.vooOpcao || "3717").trim().toUpperCase();
 
   let hubConexao = "BSB";
@@ -712,14 +709,17 @@ async function preencherFormularioCroamis(dados) {
   } else if (vooOpcaoUser.includes("3127") || vooOpcaoUser === "3127") {
     hubConexao = "GRU";
     vooNumero = "3127";
+  } else if (vooOpcaoUser.includes("3535") || vooOpcaoUser === "3535") {
+    hubConexao = "GRU";
+    vooNumero = "3535";
+  } else if (vooOpcaoUser.includes("3807") || vooOpcaoUser === "3807") {
+    hubConexao = "BSB";
+    vooNumero = "3807";
   } else {
     hubConexao = "BSB";
     vooNumero = "3717";
   }
 
-  console.log(`✈️ Voo Final Aplicado -> Numero: ${vooNumero} | Hub: ${hubConexao} (Valor Recebido: "${vooOpcaoUser}")`);
-
-  // Datas DD-MMM-YYYY
   const mesesEng = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
   function obterDataExataCroamis(diasAvançar) {
     const d = new Date();
@@ -773,15 +773,11 @@ async function preencherFormularioCroamis(dados) {
     }
   };
 
-  // 1. LINHA 1: ADD -> VOO -> DATA1 -> CGR -> HUB
-  console.log(`📌 1. Criando Linha 1 via botão Add...`);
   const btnAdd1 = obterBotaoAdd();
   if (btnAdd1) {
     btnAdd1.click();
     await esperar(800);
   }
-
-  console.log(`📌 Preenchendo Linha 1: Voo ${vooNumero} | ${dataLinha1} | CGR -> ${hubConexao}`);
 
   await focarEDigitarEmCelula(0, 'flightInfoSO.carrierNumber', vooNumero);
   await focarEDigitarEmCelula(0, 'flightInfoSO.dateOfDeparture', dataLinha1);
@@ -797,15 +793,11 @@ async function preencherFormularioCroamis(dados) {
   }
   await esperar(800);
 
-  // 2. LINHA 2: ADD -> ZZ -> DATA2 -> HUB -> DESTINO
-  console.log(`📌 2. Criando Linha 2 via botão Add...`);
   const btnAdd2 = obterBotaoAdd();
   if (btnAdd2) {
     btnAdd2.click();
     await esperar(800);
   }
-
-  console.log(`📌 Preenchendo Linha 2: ZZ | ${dataLinha2} | ${hubConexao} -> ${destinoFinal}`);
 
   let inputCarrier2 = document.getElementById('2_carrierCode') || document.getElementById('2_flightInfoSO.carrierCode');
   if (inputCarrier2) {
@@ -840,13 +832,9 @@ async function preencherFormularioCroamis(dados) {
   }
   await esperar(600);
 
-  console.log("🎉 ITINERÁRIO COMPLETO PREENCHIDO COM SUCESSO!");
-
   // ===========================================================
   // PASSO 8: CLIQUE INFALÍVEL EM EMITIR CTE + OVERRIDE
   // ===========================================================
-  console.log("🚀 Iniciando PASSO 8: Buscando botão 'Emitir Cte'...");
-
   if (document.activeElement) document.activeElement.blur();
   await esperar(1000);
 
@@ -881,13 +869,11 @@ async function preencherFormularioCroamis(dados) {
     btnEmitirCte = buscarElementoEmitirCte();
     if (!btnEmitirCte) {
       tentativasBtn++;
-      console.log(`⏳ Aguardando botão 'Emitir Cte' aparecer (Tentativa ${tentativasBtn}/12)...`);
       await esperar(500);
     }
   }
 
   if (btnEmitirCte) {
-    console.log("🎯 Botão 'Emitir Cte' localizado! Executando cliques...");
     btnEmitirCte.focus();
 
     try {
@@ -900,15 +886,8 @@ async function preencherFormularioCroamis(dados) {
     btnEmitirCte.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
     btnEmitirCte.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     btnEmitirCte.click();
-
-    console.log("✅ Disparo no 'Emitir Cte' realizado!");
-  } else {
-    console.warn("⚠️ Botão 'Emitir Cte' não encontrado.");
   }
 
-  // -----------------------------------------------------------
-  // TRATAMENTO DO PASSO FINAL / OVERRIDE
-  // -----------------------------------------------------------
   await esperar(2500);
 
   function buscarBtnOverride() {
@@ -934,12 +913,8 @@ async function preencherFormularioCroamis(dados) {
   const btnOverride = buscarBtnOverride();
 
   if (btnOverride) {
-    console.log("⚠️ Soft Embargo detectado! Clicando em 'Override and save'...");
     btnOverride.focus();
     btnOverride.click();
     await esperar(1000);
-    console.log("🎉 Embargo superado e Cte emitido com sucesso!");
-  } else {
-    console.log("🎉 Processo finalizado!");
   }
 }

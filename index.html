@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shoulders - Lançamento Manual</title>
+    <title>Shoulders - Entrada Manual</title>
     <link rel="stylesheet" href="./src/css/style.css">
     <link rel="stylesheet" href="./src/css/responsive.css">
     <style>
@@ -50,7 +50,6 @@
             text-decoration: underline;
         }
 
-        /* Form Visual */
         .form-manual {
             background: #ffffff;
             padding: 20px;
@@ -88,22 +87,6 @@
             align-items: center;
         }
 
-        .btn-add-item {
-            background: #0d6efd;
-            color: white;
-            border: none;
-            padding: 10px 14px;
-            font-size: 13px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .btn-add-item:hover {
-            background: #0b5ed7;
-        }
-
         .btn-add-caixa {
             background: #17a2b8;
             color: white;
@@ -135,7 +118,19 @@
             background: #1e9631;
         }
 
-        /* Lotes Ativos por Pallet */
+        .btn-backup-local {
+            background: #fbbc04;
+            color: #202124;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
         .secao-lotes-salvos {
             margin-top: 25px;
             text-align: left;
@@ -162,11 +157,14 @@
         }
 
         .card-pallet-titulo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-weight: bold;
             color: #1a73e8;
-            font-size: 17px;
+            font-size: 16px;
             border-bottom: 2px solid #e8f0fe;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
             margin-bottom: 12px;
         }
 
@@ -200,13 +198,26 @@
         .grupo-acoes-header {
             display: flex;
             gap: 4px;
+            align-items: center;
+        }
+
+        .select-mover-pallet {
+            padding: 4px 8px;
+            border: 1px solid #1a73e8;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #1a73e8;
+            background: #ffffff;
+            cursor: pointer;
+            outline: none;
         }
 
         .btn-add-caixa-card {
             background: #0d6efd;
             color: white;
             border: none;
-            padding: 4px 8px;
+            padding: 5px 8px;
             border-radius: 4px;
             font-size: 11px;
             font-weight: bold;
@@ -217,7 +228,7 @@
             background: #f8d7da;
             color: #842029;
             border: 1px solid #f5c2c7;
-            padding: 4px 8px;
+            padding: 5px 8px;
             border-radius: 4px;
             font-size: 11px;
             font-weight: bold;
@@ -290,16 +301,44 @@
             text-transform: uppercase;
         }
 
-        .alerta-erro-cliente {
-            background-color: #f8d7da;
-            color: #842029;
-            border: 1px solid #f5c2c7;
+        .status-sincronizacao {
             padding: 10px;
             border-radius: 6px;
-            font-size: 13px;
+            margin-bottom: 12px;
             font-weight: bold;
-            margin-bottom: 15px;
+            font-size: 13px;
             display: none;
+        }
+
+        @media print {
+
+            .form-manual,
+            .link-resumo,
+            a,
+            .campo-busca-lotes,
+            .btn-add-caixa-card,
+            .btn-excluir-lote-card,
+            .btn-editar-linha,
+            .btn-remover-linha,
+            .select-mover-pallet {
+                display: none !important;
+            }
+
+            body {
+                background-color: #ffffff !important;
+                padding: 0 !important;
+            }
+
+            .container {
+                box-shadow: none !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+
+            .card-pallet-container {
+                page-break-inside: avoid;
+                border: 1px solid #000 !important;
+            }
         }
     </style>
 </head>
@@ -308,12 +347,12 @@
 
     <div class="container">
         <h1>✍️ Shoulders - Entrada Manual</h1>
-        <p class="subtitulo">Gerenciamento de Lotes e Expedição</p>
+        <p class="subtitulo">Gerenciamento de Lotes e Expedição (Salvo no Celular)</p>
 
-        <!-- Navegação Rápida para Resumo e Modo Voz -->
         <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 20px;">
-            <a href="./voice.html" style="color: #1a73e8; font-weight: bold; text-decoration: none; font-size: 14px;">🎙️
-                Ir para Modo Voz</a>
+            <a href="./voice.html"
+                style="color: #1a73e8; font-weight: bold; text-decoration: none; font-size: 14px;">🎙️ Ir para Modo
+                Voz</a>
         </div>
 
         <a href="./resumo.html" target="_blank" class="link-resumo">📊 Abrir Resumo de Notas & Emissão</a>
@@ -321,19 +360,16 @@
         <div id="data-atual" style="font-weight: bold; color: #5f6368; margin-bottom: 15px; font-size: 14px;">📅 Data:
             --/--/----</div>
 
-        <div class="form-manual">
+        <div id="box-status-sinc" class="status-sincronizacao"></div>
 
-            <div id="alerta-cliente-repetido" class="alerta-erro-cliente">
-                ⚠️ Este cliente já possui caixas lançadas abaixo! Use o botão "➕ Add Caixa" direto no card do cliente.
-            </div>
+        <div class="form-manual">
 
             <!-- CLIENTE -->
             <div class="form-grupo">
                 <label>🏢 Destinatário / Cliente:</label>
                 <div class="linha-selecao-custom">
                     <input type="text" id="manual-cliente-input" list="lista-clientes"
-                        placeholder="🔍 Digite para buscar cliente ou CNPJ..."
-                        oninput="validarLoteExistente(this.value)">
+                        placeholder="🔍 Digite para buscar cliente ou CNPJ...">
                     <datalist id="lista-clientes">
                         <option value="BARRA SHOPPING - 43470566004853">
                         <option value="BATEL - 43470566007879">
@@ -370,7 +406,6 @@
                         <option value="VILA VELHA - 43470566010233">
                         <option value="VITORIA - 43470566008417">
                     </datalist>
-                    <button type="button" class="btn-add-item" onclick="adicionarNovoClienteLista()">➕ Add Novo</button>
                 </div>
             </div>
 
@@ -402,7 +437,8 @@
                 <div class="linha-selecao-custom">
                     <select id="manual-medida" onchange="verificarMedidaCustomizada(this)">
                         <option value="PADRÃO">PADRÃO (60x39x33)</option>
-                        <option value="60X39X23">60X39X23</option>
+                        <option value="60X39X23">60x39x23</option>
+                        <option value="60X39X10">60x39x10</option>
                         <option value="66x60x10">66x60x10</option>
                         <option value="39x33x23">39x33x23</option>
                         <option value="39x33x10">39x33x10</option>
@@ -428,11 +464,14 @@
                 Adicionar Caixa ao Lote</button>
             <button class="btn-salvar-manual" id="btn-salvar-manual" onclick="confirmarESalvarLotes()">💾 Sincronizar /
                 Salvar Lotes</button>
+            <button type="button" class="btn-backup-local" style="background: #e37400; color: white;"
+                onclick="gerarPDFRelatorio()">📄 Imprimir / Salvar PDF do Lote</button>
         </div>
 
         <!-- LISTA SESSÃO ATUAL AGRUPADA POR PALLET -->
         <div class="secao-lotes-salvos">
-            <h3 style="color: #1a73e8; margin-bottom: 8px;">📋 Lotes Criados & Gerenciamento por Pallet</h3>
+            <h3 style="color: #1a73e8; margin-bottom: 8px;">📋 Lotes Criados (<span id="count-total-lotes">0</span>)
+            </h3>
             <input type="text" id="busca-lotes" class="campo-busca-lotes"
                 placeholder="🔍 Pesquisar por Cliente, CNPJ ou Pallet..." oninput="renderizarListaDeLotes()">
             <div id="container-lista-lotes"></div>
@@ -442,6 +481,7 @@
 
     <script>
         const URL_WEB_APP = "https://script.google.com/macros/s/AKfycby2zfEvuyFxV_nuNrno9jtiBCiRX9eWf8rWBh6hnC08kCVtYR9OjfolDU4SVpCmhbc8/exec";
+        const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_manual_cache_v3";
 
         const mapaCNPJShopping = {
             "PLAZA CASA FORTE": "43470566006716",
@@ -484,7 +524,6 @@
         };
 
         let lotesSessaoAtual = [];
-        let modoInclusaoCardDireta = false;
 
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('data-atual').innerText = `📅 Data: ${obterDataHoje()}`;
@@ -496,8 +535,29 @@
                 }
             });
 
-            renderizarListaDeLotes();
+            carregarCacheLocal();
         });
+
+        function salvarCacheLocal() {
+            try {
+                localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(lotesSessaoAtual));
+            } catch (e) {
+                console.error("Erro ao salvar rascunho local:", e);
+            }
+            renderizarListaDeLotes();
+        }
+
+        function carregarCacheLocal() {
+            try {
+                const salvo = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
+                if (salvo) {
+                    lotesSessaoAtual = JSON.parse(salvo);
+                }
+            } catch (e) {
+                console.error("Erro ao carregar rascunho local:", e);
+            }
+            renderizarListaDeLotes();
+        }
 
         function obterDataHoje() {
             const hoje = new Date();
@@ -509,28 +569,6 @@
         function extrairNomeCliente(textoInput) {
             if (!textoInput) return "";
             return textoInput.split("-")[0].trim().toUpperCase();
-        }
-
-        function validarLoteExistente(val) {
-            if (modoInclusaoCardDireta) return;
-
-            const alerta = document.getElementById('alerta-cliente-repetido');
-            const btnAdd = document.getElementById('btn-add-caixa');
-            const nomeCliente = extrairNomeCliente(val);
-
-            const jaExiste = lotesSessaoAtual.some(item => item.destinatario.toUpperCase() === nomeCliente && nomeCliente !== "");
-
-            if (jaExiste) {
-                alerta.style.display = 'block';
-                btnAdd.disabled = true;
-                btnAdd.style.opacity = '0.5';
-                btnAdd.style.cursor = 'not-allowed';
-            } else {
-                alerta.style.display = 'none';
-                btnAdd.disabled = false;
-                btnAdd.style.opacity = '1';
-                btnAdd.style.cursor = 'pointer';
-            }
         }
 
         function verificarMedidaCustomizada(select) {
@@ -555,11 +593,12 @@
             const medida = selectMedida.value === 'CUSTOM' ? document.getElementById('manual-medida-custom').value.trim().toUpperCase() : selectMedida.value;
 
             const qtd = parseInt(document.getElementById('manual-qtd').value, 10) || 1;
-            const peso = parseFloat(document.getElementById('manual-peso').value) || 0;
+            const peso = parseFloat(document.getElementById('manual-peso').value.replace(',', '.')) || 0;
 
-            if (!peso || peso <= 0) { alert("⚠️ Informe o peso!"); return; }
+            if (!peso || peso <= 0) { alert("⚠️ Informe um peso válido!"); return; }
 
             const item = {
+                id: Date.now(),
                 data: obterDataHoje(),
                 destinatario: cliente,
                 nome: cliente,
@@ -571,40 +610,19 @@
             };
 
             lotesSessaoAtual.push(item);
+            salvarCacheLocal();
 
-
-            document.getElementById('manual-cliente-input').value = "";
-
-            // Zeramos a variável de cálculo e deixamos o campo de peso completamente limpo
-            let pesoCalculado = 0;
             document.getElementById('manual-peso').value = "";
-
             document.getElementById('manual-qtd').value = "1";
-            document.getElementById('manual-pallet-custom').value = "";
-            document.getElementById('manual-medida-custom').value = "";
-
-            modoInclusaoCardDireta = false;
-            validarLoteExistente("");
-
-            renderizarListaDeLotes();
+            document.getElementById('manual-peso').focus();
         }
 
         function preencherCaixaDiretaCard(cliente, pallet) {
-            modoInclusaoCardDireta = true;
-
             const inputCliente = document.getElementById('manual-cliente-input');
             const cnpj = mapaCNPJShopping[cliente] || "";
 
             inputCliente.value = cnpj ? `${cliente} - ${cnpj}` : cliente;
-
-            const selectPallet = document.getElementById('manual-pallet');
-            selectPallet.value = pallet;
-
-            document.getElementById('alerta-cliente-repetido').style.display = 'none';
-            const btnAdd = document.getElementById('btn-add-caixa');
-            btnAdd.disabled = false;
-            btnAdd.style.opacity = '1';
-            btnAdd.style.cursor = 'pointer';
+            document.getElementById('manual-pallet').value = pallet;
 
             inputCliente.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => {
@@ -612,12 +630,27 @@
             }, 300);
         }
 
+        function moverLoteClientePallet(palletOrigem, cliente, novoPallet) {
+            if (!novoPallet || palletOrigem === novoPallet) return;
+
+            lotesSessaoAtual.forEach(item => {
+                if (item.pallet === palletOrigem && item.destinatario === cliente) {
+                    item.pallet = novoPallet;
+                }
+            });
+
+            salvarCacheLocal();
+        }
+
         function renderizarListaDeLotes() {
             const container = document.getElementById('container-lista-lotes');
+            const countTag = document.getElementById('count-total-lotes');
+            if (countTag) countTag.innerText = lotesSessaoAtual.length;
+
             const termoBusca = (document.getElementById('busca-lotes')?.value || "").toLowerCase().trim();
 
             if (lotesSessaoAtual.length === 0) {
-                container.innerHTML = `<div style="color: #888; font-style: italic; text-align:center; padding: 10px;">Nenhum lote montado na sessão atual.</div>`;
+                container.innerHTML = `<div style="color: #888; font-style: italic; text-align:center; padding: 15px;">Nenhum lote criado no momento. Salvo localmente.</div>`;
                 return;
             }
 
@@ -627,7 +660,7 @@
                 const p = item.pallet || "Pallet Indefinido";
                 const c = item.destinatario || "Cliente Sem Nome";
 
-                if (termoBusca && !p.toLowerCase().includes(termoBusca) && !c.toLowerCase().includes(termoBusca) && !item.cnpj.includes(termoBusca)) {
+                if (termoBusca && !p.toLowerCase().includes(termoBusca) && !c.toLowerCase().includes(termoBusca) && !(item.cnpj || "").includes(termoBusca)) {
                     return;
                 }
 
@@ -660,6 +693,11 @@
                                     <span class="cnpj-tag">(CNPJ: ${dadosCliente.cnpj || "N/A"})</span>
                                 </div>
                                 <div class="grupo-acoes-header">
+                                    <select class="select-mover-pallet" onchange="moverLoteClientePallet('${palletNome}', '${clienteNome}', this.value)">
+                                        ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => `
+                                            <option value="Pallet ${n}" ${palletNome === `Pallet ${n}` ? 'selected' : ''}>Pallet ${n}</option>
+                                        `).join('')}
+                                    </select>
                                     <button class="btn-add-caixa-card" onclick="preencherCaixaDiretaCard('${clienteNome}', '${palletNome}')">➕ Add Caixa</button>
                                     <button class="btn-excluir-lote-card" onclick="excluirLoteClientePallet('${palletNome}', '${clienteNome}')">🗑️ Excluir</button>
                                 </div>
@@ -736,56 +774,79 @@
             cx.quantidade = parseInt(novaQtd, 10) || cx.quantidade;
             cx.peso = parseFloat(novoPeso) || cx.peso;
 
-            renderizarListaDeLotes();
+            salvarCacheLocal();
         }
 
         function excluirItem(index) {
             lotesSessaoAtual.splice(index, 1);
-            validarLoteExistente(document.getElementById('manual-cliente-input').value);
-            renderizarListaDeLotes();
+            salvarCacheLocal();
         }
 
         function excluirLoteClientePallet(pallet, cliente) {
             if (confirm(`Tem certeza que deseja excluir todas as caixas de ${cliente} no ${pallet}?`)) {
                 lotesSessaoAtual = lotesSessaoAtual.filter(item => !(item.pallet === pallet && item.destinatario === cliente));
-                validarLoteExistente(document.getElementById('manual-cliente-input').value);
-                renderizarListaDeLotes();
+                salvarCacheLocal();
             }
         }
 
         async function confirmarESalvarLotes() {
             if (lotesSessaoAtual.length === 0) { alert("⚠️ Nenhum lote para salvar!"); return; }
 
-            // PERGUNTA DE CONFERÊNCIA ANTES DE SALVAR
-            const confimacaoConferencia = confirm("❓ Todos os lotes estão feitos e corretos para enviar para a planilha?");
+            const confimacaoConferencia = confirm(`❓ Deseja sincronizar ${lotesSessaoAtual.length} caixa(s) com a planilha Google?`);
             if (!confimacaoConferencia) return;
 
             const btn = document.getElementById('btn-salvar-manual');
-            btn.disabled = true;
-            btn.innerText = "⏳ Sincronizando com a Planilha...";
+            const boxStatus = document.getElementById('box-status-sinc');
 
-            if (URL_WEB_APP) {
-                const envios = lotesSessaoAtual.map(item =>
-                    fetch(URL_WEB_APP, {
+            btn.disabled = true;
+            boxStatus.style.display = 'block';
+            boxStatus.style.background = '#e8f0fe';
+            boxStatus.style.color = '#1a73e8';
+
+            const total = lotesSessaoAtual.length;
+            let enviadasComSucesso = [];
+
+            for (let i = 0; i < total; i++) {
+                const item = lotesSessaoAtual[i];
+                boxStatus.innerText = `⏳ Gravando caixa ${i + 1} de ${total} (${item.destinatario} - ${item.peso}Kg)...`;
+
+                try {
+                    await fetch(URL_WEB_APP, {
                         method: "POST",
                         mode: "no-cors",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
                         body: JSON.stringify(item)
-                    }).catch(err => console.error("Erro no envio:", err))
-                );
-                await Promise.all(envios);
+                    });
+
+                    enviadasComSucesso.push(item.id);
+                    await new Promise(resolve => setTimeout(resolve, 350));
+
+                } catch (err) {
+                    console.error("Erro ao enviar item:", item, err);
+                }
             }
 
-            alert("✅ Todos os lotes foram salvos e sincronizados com sucesso na planilha!");
-            lotesSessaoAtual = [];
+            lotesSessaoAtual = lotesSessaoAtual.filter(item => !enviadasComSucesso.includes(item.id));
+            salvarCacheLocal();
+
             btn.disabled = false;
-            btn.innerText = "💾 Sincronizar / Salvar Lotes";
-            validarLoteExistente("");
-            renderizarListaDeLotes();
+            boxStatus.style.background = '#d4edda';
+            boxStatus.style.color = '#155724';
+            boxStatus.innerText = `✅ Sincronização concluída (${enviadasComSucesso.length} caixas salvas na planilha)!`;
+
+            setTimeout(() => { boxStatus.style.display = 'none'; }, 3000);
 
             if (confirm("Deseja ir para a tela de Resumo das Notas para realizar a emissão consolidada agora?")) {
                 window.location.href = "./resumo.html";
             }
+        }
+
+        function gerarPDFRelatorio() {
+            if (lotesSessaoAtual.length === 0) {
+                alert("⚠️ Não há lotes criados para gerar o relatório em PDF.");
+                return;
+            }
+            window.print();
         }
     </script>
 </body>

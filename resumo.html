@@ -78,7 +78,6 @@
             margin-bottom: 20px;
         }
 
-        /* Sanfona de Data */
         .bloco-data-group {
             border: 1px solid #dcdcdc;
             border-radius: 10px;
@@ -110,7 +109,6 @@
             display: block;
         }
 
-        /* Card por Cliente */
         .card-cliente-resumo {
             background: #ffffff;
             border: 1px solid #e0e0e0;
@@ -135,7 +133,6 @@
             margin-bottom: 12px;
         }
 
-        /* Campos Seleção CROAMIS */
         .linha-campo-croamis {
             display: flex;
             align-items: center;
@@ -165,7 +162,6 @@
             font-weight: 500;
         }
 
-        /* Tabela Linhas Medida */
         .bloco-linha-caixa {
             background: #f8f9fa;
             border: 1px solid #eee;
@@ -188,7 +184,6 @@
             font-weight: bold;
         }
 
-        /* Área de Notas Fiscais (NF-e) */
         .box-nfe-container {
             border: 1px dashed #1a73e8;
             background: #f4f8fe;
@@ -252,7 +247,6 @@
             font-size: 14px;
         }
 
-        /* Botão Emitir LATAM */
         .btn-emitir-latam {
             background: #1a73e8;
             color: white;
@@ -303,8 +297,8 @@
             <a href="./index.html" style="color: #1a73e8; font-weight: bold; text-decoration: none; font-size: 14px;">✍️
                 Volta para Lançamento Manual</a>
             <a href="./voice.html"
-                style="color: #1a73e8; font-weight: bold; text-decoration: none; font-size: 14px;">🎙️
-                Ir para Modo Voz</a>
+                style="color: #1a73e8; font-weight: bold; text-decoration: none; font-size: 14px;">🎙️ Ir para Modo
+                Voz</a>
         </div>
 
         <h1>📊 Fechamento Consolidado</h1>
@@ -325,6 +319,14 @@
     <script>
         const URL_WEB_APP = "https://script.google.com/macros/s/AKfycby2zfEvuyFxV_nuNrno9jtiBCiRX9eWf8rWBh6hnC08kCVtYR9OjfolDU4SVpCmhbc8/exec";
         const CHAVE_STORAGE_NFES = "shoulders_nfes_cache_v1";
+
+        // 🎯 LISTA DOS CLIENTES CUJO PAGADOR PADRÃO É O REMETENTE (MATRIZ)
+        const clientesPagadorRemetente = [
+            "ICARAI", "BARRA SHOPPING", "VITORIA", "VILA VELHA", "BATEL", "TIJUCA",
+            "CATUAÍ LONDRINA", "CATUAI LONDRINA", "CATUAÍ MARINGA", "CATUAI MARINGA",
+            "RIO DESIGN BARRA", "RIO SUL", "HAIGHT DIAS", "HAIGHT RIO DESIGN", "ILHA",
+            "LEBLON", "HAIGHT VILLAGE MALL", "HAIGHT LEBLON", "RIO POTY"
+        ];
 
         const mapaCNPJShopping = {
             "PLAZA CASA FORTE": "43470566006716",
@@ -371,17 +373,14 @@
         };
 
         let dadosBrutosGlobal = [];
-        let estadoSanfonaDatas = {}; // Guarda estado aberto/fechado por data
-        let mapaNFesClientes = {}; // Guarda as NFs por id do card
+        let estadoSanfonaDatas = {};
+        let mapaNFesClientes = {};
 
         document.addEventListener("DOMContentLoaded", () => {
-            carregarCacheNFes(); // ⬅️ Restaura o LocalStorage antes de desenhar a tela
+            carregarCacheNFes();
             carregarDadosPlanilha();
         });
 
-        // ==========================================
-        // CONTROLE DO LOCALSTORAGE (NFs E VALORES)
-        // ==========================================
         function carregarCacheNFes() {
             try {
                 const salvo = localStorage.getItem(CHAVE_STORAGE_NFES);
@@ -450,7 +449,6 @@
                 return;
             }
 
-            // Estrutura: Data -> Cliente -> Medida
             const agrupadoPorData = {};
 
             dadosBrutosGlobal.forEach(item => {
@@ -495,7 +493,18 @@
                 agrupadoPorData[dataStr][clienteNome].totalPeso += pesoVal;
             });
 
-            const datasOrdenadas = Object.keys(agrupadoPorData).sort((a, b) => b.localeCompare(a));
+            function converterParaDataObj(dataStr) {
+                if (!dataStr) return new Date(0);
+                const p = dataStr.split('/');
+                if (p.length === 3) {
+                    return new Date(p[2], p[1] - 1, p[0]);
+                }
+                return new Date(0);
+            }
+
+            const datasOrdenadas = Object.keys(agrupadoPorData).sort((a, b) => {
+                return converterParaDataObj(b) - converterParaDataObj(a);
+            });
 
             if (datasOrdenadas.length === 0) {
                 container.innerHTML = `<div class="status-carregando">Nenhum registro para os filtros digitados.</div>`;
@@ -507,7 +516,7 @@
             datasOrdenadas.forEach(dataKey => {
                 const ehHoje = dataKey === dataHoje;
                 if (estadoSanfonaDatas[dataKey] === undefined) {
-                    estadoSanfonaDatas[dataKey] = false; // Inicia recolhido por padrão
+                    estadoSanfonaDatas[dataKey] = false;
                 }
                 const estaAberto = estadoSanfonaDatas[dataKey];
 
@@ -524,10 +533,13 @@
                     const cli = agrupadoPorData[dataKey][cliNome];
                     const cardId = `card_${dataKey.replace(/\//g, '')}_${cliNome.replace(/[^A-Z0-9]/g, '')}`;
 
-                    // Preserva o que está salvo no LocalStorage, ou inicia com 1 linha em branco se for novo
                     if (!mapaNFesClientes[cardId] || mapaNFesClientes[cardId].length === 0) {
                         mapaNFesClientes[cardId] = [{ chave: "", valor: "" }];
                     }
+
+                    // 🎯 VERIFICA SE O CLIENTE DEVE TER O PAGADOR PADRÃO COMO REMETENTE
+                    const ehRemetente = clientesPagadorRemetente.includes(cli.cliente);
+                    const pagadorPadraoVal = ehRemetente ? "Remetente" : "Destinatario";
 
                     html += `
                         <div class="card-cliente-resumo" id="${cardId}">
@@ -537,8 +549,8 @@
                             <div class="linha-campo-croamis">
                                 <label>Pagador do Frete:</label>
                                 <select id="pagador_${cardId}">
-                                    <option value="Destinatario">Destinatário</option>
-                                    <option value="Remetente">Remetente (Matriz)</option>
+                                    <option value="Destinatario" ${pagadorPadraoVal === 'Destinatario' ? 'selected' : ''}>Destinatário</option>
+                                    <option value="Remetente" ${pagadorPadraoVal === 'Remetente' ? 'selected' : ''}>Remetente (Matriz)</option>
                                 </select>
                             </div>
 
@@ -550,6 +562,8 @@
                                     <option value="9139">9139 (CGH)</option>
                                     <option value="3127">3127 (GRU)</option>
                                     <option value="9033">9033 (GRU)</option>
+                                    <option value="3535 (GRU)">3535 (GRU)</option>
+                                    <option value="3807 (BSB)">3807 (BSB)</option>
                                 </select>
                             </div>
 
@@ -562,15 +576,14 @@
                             <div class="bloco-linha-caixa">
                                 <span>📦 Caixa: <strong>${med}</strong></span>
                                 <div>
-    <strong>${mData.vol} Vol | ${mData.peso.toFixed(1)} Kg</strong>
-    <button class="btn-editar-caixa-resumo" onclick="editarCaixaResumo('${dataKey}', '${cli.cliente}', '${med}')">✏️ Editar</button>
-    <button class="btn-excluir-caixa-resumo" onclick="excluirLotePlanilha('${dataKey}', '${cli.cliente}', '${med}')">🗑️ Excluir</button>
-</div>
+                                    <strong>${mData.vol} Vol | ${mData.peso.toFixed(1)} Kg</strong>
+                                    <button class="btn-editar-caixa-resumo" onclick="editarCaixaResumo('${dataKey}', '${cli.cliente}', '${med}')">✏️ Editar</button>
+                                    <button class="btn-excluir-caixa-resumo" onclick="excluirLotePlanilha('${dataKey}', '${cli.cliente}', '${med}')">🗑️ Excluir</button>
+                                </div>
                             </div>
                         `;
                     });
 
-                    // Bloco NFs
                     html += `
                         <div class="box-nfe-container">
                             <div class="header-nfe-box">
@@ -638,7 +651,7 @@
             }
             if (mapaNFesClientes[cardId][index]) {
                 mapaNFesClientes[cardId][index][campo] = valor;
-                salvarCacheNFes(); // Salva no LocalStorage instantaneamente
+                salvarCacheNFes();
             }
         }
 
@@ -658,8 +671,8 @@
         }
 
         function tratarInputValor(texto) {
-            let limpo = texto.replace(/,/g, ''); // Barre vírgulas
-            limpo = limpo.replace(/[^0-9.]/g, ''); // Aceita apenas números e ponto
+            let limpo = texto.replace(/,/g, '');
+            limpo = limpo.replace(/[^0-9.]/g, '');
             const partes = limpo.split('.');
             if (partes.length > 2) {
                 limpo = partes[0] + '.' + partes.slice(1).join('');
@@ -695,7 +708,6 @@
             const voo = document.getElementById(`voo_${cardId}`)?.value || "3717";
             const nfes = mapaNFesClientes[cardId] || [];
 
-            // Valida se há alguma chave de NF-e com tamanho diferente de 44 dígitos
             const nfInvalida = nfes.find(n => n.chave && n.chave.trim() !== "" && n.chave.trim().length !== 44);
             if (nfInvalida) {
                 alert(`⚠️ A chave de NF-e "${nfInvalida.chave}" está incompleta!\nEla deve conter exatamente 44 dígitos.`);
@@ -707,14 +719,13 @@
                 valorTotalProduto: (n.valor || "0.00").trim()
             })).filter(n => n.chaveNfe !== "");
 
-            // 📦 Captura as caixas agrupadas do cliente para passar as dimensões exatas ao CROAMIS
             const caixasDoCard = [];
             const cardElement = document.getElementById(cardId);
             if (cardElement) {
                 const linhasCaixa = cardElement.querySelectorAll('.bloco-linha-caixa');
                 linhasCaixa.forEach(linha => {
                     const textoCaixa = linha.querySelector('strong')?.innerText || "PADRÃO";
-                    const textoInfo = linha.querySelectorAll('strong')[1]?.innerText || ""; // ex: "2 Vol | 15.0 Kg"
+                    const textoInfo = linha.querySelectorAll('strong')[1]?.innerText || "";
 
                     const volMatch = textoInfo.match(/(\d+)\s*Vol/i);
                     const pesoMatch = textoInfo.match(/([\d.]+)\s*Kg/i);
@@ -722,8 +733,7 @@
                     const qtd = volMatch ? parseInt(volMatch[1], 10) : 1;
                     const peso = pesoMatch ? parseFloat(pesoMatch[1]) : totalPeso;
 
-                    // Define dimensões baseadas no nome da caixa/medida
-                    let comp = 60, larg = 39, alt = 33; // Padrão
+                    let comp = 60, larg = 39, alt = 33;
                     if (textoCaixa.includes("X")) {
                         const dim = textoCaixa.split("X");
                         if (dim.length === 3) {
@@ -761,7 +771,6 @@
 
             console.log("✈️ Disparando para Extensão do CROAMIS:", payload);
 
-            // Envia para o content.js
             window.postMessage({
                 tipo: "PREENCHER_CROAMIS",
                 payload: payload
@@ -810,7 +819,6 @@
 
                 statusDiv.innerText = "✅ Lote excluído da planilha!";
 
-                // Remove do array local para atualizar a tela sem precisar reler a planilha inteira
                 dadosBrutosGlobal = dadosBrutosGlobal.filter(item => {
                     const c = (item.destinatario || item.nome || "").toUpperCase().trim();
                     const m = (item.medida || "PADRÃO").toUpperCase().trim();
