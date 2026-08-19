@@ -1,3 +1,6 @@
+// ===========================================================
+// 1. COMUNICAÇÃO DA EXTENSÃO (CONTENT SCRIPT)
+// ===========================================================
 if (window.location.href.includes("127.0.0.1") || window.location.href.includes("localhost") || window.location.href.includes("github.io")) {
   window.addEventListener("message", (event) => {
     if (event.data && (event.data.tipo === "PREENCHER_CROAMIS" || event.data.tipo === "EMITIR_LOTE_CROAMIS")) {
@@ -24,6 +27,9 @@ if (window.location.href.includes("croamis.latamcargo.com")) {
   });
 }
 
+// ===========================================================
+// 2. FUNÇÕES AUXILIARES DE SUPORTE
+// ===========================================================
 function esperar(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -51,6 +57,137 @@ async function fecharAlertasModal() {
   }
 }
 
+// ===========================================================
+// 3. MAPA E PREENCHIMENTO MANUAL DAS LOJAS NO DESTINATÁRIO
+// ===========================================================
+const MAPA_REMETENTES_DADOS = {
+  "43470566007100": { nome: "LEBLON", cep: "22430060", ie: "87400689", numero: "290", produto: "ST2BA" },
+  "43470566009065": { nome: "ICARAI", cep: "24220215", ie: "12336730", numero: "239", produto: "ST2BA" },
+  "43470566002214": { nome: "RIO DESIGN BARRA", cep: "22793081", ie: "78394005", numero: "7777", produto: "ST2BA" },
+  "43470566013500": { nome: "HAIGHT RIO DESIGN", cep: "22793081", ie: "15691220", numero: "07777", produto: "ST2BA" },
+  "43470566013844": { nome: "HAIGHT LEBLON", cep: "22430060", ie: "15726300", numero: "290", produto: "ST2BA" },
+  "43470566013925": { nome: "HAIGHT VILLAGE MALL", cep: "22640102", ie: "15726318", numero: "03900", produto: "ST2BA" },
+  "43470566006988": { nome: "TIJUCA", cep: "20511000", ie: "87313891", numero: "987", produto: "ST2BA" },
+  "43470566010829": { nome: "RIO SUL", cep: "22290070", ie: "14381163", numero: "445", produto: "ST2BA" },
+  "43470566004853": { nome: "BARRA SHOPPING", cep: "22640102", ie: "79943169", numero: "04666", produto: "ST2BA" },
+  "43470566013330": { nome: "HAIGHT DIAS", cep: "22431050", ie: "15623616", numero: "00217", produto: "ST2BA" },
+  "43470566008417": { nome: "VITORIA", cep: "29050420", ie: "083570233", numero: "200", produto: "ST2BA" },
+  "43470566010233": { nome: "VILA VELHA", cep: "29107010", ie: "084050314", numero: "2418", produto: "ST2BA" },
+  "43470566007879": { nome: "BATEL", cep: "80420090", ie: "9077812161", numero: "1868", produto: "ST2BA" },
+  "43470566012368": { nome: "CATUAÍ LONDRINA", cep: "86050901", ie: "9113106783", numero: "5600", endereco: "LOC CELSO GARCIA CID", produto: "ST2BA" },
+  "43470566012287": { nome: "CATUAÍ MARINGA", cep: "87070000", ie: "9112829170", numero: "9161", produto: "ST2BA" },
+  "43470566010403": { nome: "ILHA", cep: "65074115", ie: "127945555", numero: "987", produto: "ST2BA" },
+  "43470566010586": { nome: "MANAUARA", cep: "69057002", ie: "054566657", numero: "1300", produto: "ST5BA" }
+};
+
+async function preencherDestinatarioManual(escopo, cnpjAlvo) {
+  const dados = MAPA_REMETENTES_DADOS[cnpjAlvo];
+  if (!dados) return false;
+
+  console.log(`✍️ [Destinatário Manual] Preenchendo dados de: ${dados.nome}`);
+
+  // 1. Tipo = CNPJ
+  const selectTax = escopo.querySelector('#taxIdType') || document.getElementById('taxIdType');
+  if (selectTax) {
+    selectTax.value = "CNPJ";
+    selectTax.dispatchEvent(new Event('change', { bubbles: true }));
+    await esperar(300);
+  }
+
+  // 2. Preenche o CNPJ e dispara TAB (Blur)
+  const campoCNPJ = escopo.querySelector('#customerCode, #taxIdNumber, input[name*="taxId" i], input[name*="customer" i]') ||
+    document.getElementById('taxIdNumber');
+
+  if (campoCNPJ) {
+    campoCNPJ.focus();
+    campoCNPJ.click();
+    atribuirValorInput(campoCNPJ, cnpjAlvo);
+    await esperar(300);
+
+    campoCNPJ.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
+    campoCNPJ.dispatchEvent(new Event('blur', { bubbles: true }));
+    await esperar(800);
+  }
+
+  // 3. Nome do Cliente (Sempre SHOULDER S.A.)
+  const campoNome = escopo.querySelector('#customerName, input[id*="customerName" i]');
+  if (campoNome) {
+    campoNome.removeAttribute('readonly');
+    campoNome.focus();
+    atribuirValorInput(campoNome, "SHOULDER S.A.");
+    campoNome.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+
+  // 4. CEP com simulação de TAB para puxar o Endereço
+  const campoCEP = escopo.querySelector('#zipCode, input[id*="zip" i]');
+  if (campoCEP) {
+    campoCEP.removeAttribute('readonly');
+    campoCEP.focus();
+    campoCEP.click();
+    atribuirValorInput(campoCEP, dados.cep);
+    await esperar(300);
+
+    campoCEP.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
+    campoCEP.dispatchEvent(new KeyboardEvent('keyup', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
+    campoCEP.dispatchEvent(new Event('change', { bubbles: true }));
+    campoCEP.dispatchEvent(new Event('blur', { bubbles: true }));
+
+    await esperar(1000);
+  }
+
+  // 5. Inscrição Estadual (IE)
+  const campoIE = escopo.querySelector('#stateRegistration, input[id*="stateRegistration" i]');
+  if (campoIE) {
+    campoIE.removeAttribute('readonly');
+    campoIE.removeAttribute('disabled');
+    campoIE.focus();
+    atribuirValorInput(campoIE, dados.ie);
+    campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+
+  // 6. Código CNAE (Sempre 4930202)
+  const campoCNAE = escopo.querySelector('#cnaeCode, input[id*="cnae" i]');
+  if (campoCNAE) {
+    campoCNAE.removeAttribute('readonly');
+    campoCNAE.focus();
+    atribuirValorInput(campoCNAE, "4930202");
+    campoCNAE.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+
+  // 7. Endereço (Apenas para Catuaí Londrina)
+  const campoEndereco = escopo.querySelector('#address, input[id*="address" i]');
+  if (campoEndereco) {
+    if (cnpjAlvo === "43470566012368" && dados.endereco) {
+      campoEndereco.removeAttribute('readonly');
+      campoEndereco.focus();
+      atribuirValorInput(campoEndereco, dados.endereco);
+      campoEndereco.dispatchEvent(new Event('blur', { bubbles: true }));
+    }
+  }
+
+  // 8. Número (#streetNum)
+  const campoNumero = escopo.querySelector('#streetNum, #buildingNumber, input[id*="streetNum" i], input[id*="buildingNumber" i]') ||
+    document.getElementById('streetNum');
+
+  if (campoNumero) {
+    campoNumero.removeAttribute('disabled');
+    campoNumero.removeAttribute('readonly');
+    campoNumero.focus();
+    campoNumero.click();
+    atribuirValorInput(campoNumero, dados.numero);
+    await esperar(200);
+    campoNumero.dispatchEvent(new Event('change', { bubbles: true }));
+    campoNumero.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+
+  await esperar(800);
+  console.log(`✅ [Destinatário Manual] ${dados.nome} preenchido com sucesso! Numeração: ${dados.numero}`);
+  return true;
+}
+
+// ===========================================================
+// 4. BUSCA PADRÃO POR CNPJ (LUPA + SIMULAÇÃO DE TAB/BLUR)
+// ===========================================================
 async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
   const escopo = abaId ? document.getElementById(abaId) : document;
   if (!escopo) return;
@@ -65,79 +202,103 @@ async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
   campoCNPJ.click();
 
   atribuirValorInput(campoCNPJ, cnpjValor);
-  await esperar(400);
+  await esperar(300);
 
+  // Dispara a tecla TAB e o evento de Blur para ativar o callback nativo do CROAMIS
+  campoCNPJ.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
+  campoCNPJ.dispatchEvent(new KeyboardEvent('keyup', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
+  campoCNPJ.dispatchEvent(new Event('change', { bubbles: true }));
+  campoCNPJ.dispatchEvent(new Event('blur', { bubbles: true }));
+
+  await esperar(1000); // Aguarda o retorno dos dados da Matriz via AJAX
+
+  // Caso o sistema exija clicar na Lupa por não preencher via TAB sozinho
   const iconeLupa = escopo.querySelector('img[src*="search" i], img[src*="lov" i], img[onclick*="customer" i]') ||
     campoCNPJ.parentElement.querySelector('img');
 
-  if (iconeLupa) {
+  const campoNome = escopo.querySelector('#customerName, input[id*="customerName" i]');
+  if ((!campoNome || !campoNome.value) && iconeLupa) {
     iconeLupa.click();
-  } else {
-    campoCNPJ.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, code: 'Enter', bubbles: true }));
-    campoCNPJ.dispatchEvent(new Event('blur', { bubbles: true }));
-  }
+    await esperar(1500);
 
-  await esperar(2000);
+    const primeiraLinha = document.querySelector('.jqgrow, tr[role="row"][id="1"], table[id*="lov"] tbody tr:nth-child(2)');
+    if (primeiraLinha) {
+      primeiraLinha.click();
+      await esperar(300);
 
-  const primeiraLinha = document.querySelector('.jqgrow, tr[role="row"][id="1"], table[id*="lov"] tbody tr:nth-child(2)');
-  if (primeiraLinha) {
-    primeiraLinha.click();
-    await esperar(300);
+      const btnOKModal = document.getElementById('lovDialogOK') ||
+        Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]')).find(
+          b => b.value === 'OK' || b.innerText.trim() === 'OK'
+        );
 
-    const btnOKModal = document.getElementById('lovDialogOK') ||
-      Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]')).find(
-        b => b.value === 'OK' || b.innerText.trim() === 'OK'
-      );
-
-    if (btnOKModal && btnOKModal.offsetWidth > 0) {
-      btnOKModal.click();
-      await esperar(1500);
+      if (btnOKModal && btnOKModal.offsetWidth > 0) {
+        btnOKModal.click();
+        await esperar(1200);
+      }
     }
   }
 }
 
-// 🛍️ TRATATIVA DE CEP E NÚMERO (COM ID REAL REVELADO NO DEVTOOLS: buttonFiveDialogOK)
+// ===========================================================
+// 5. TRATATIVA EXCLUSIVA DO MANAÍRA SHOPPING (POPUP CEP)
+// ===========================================================
 async function tratarManairaShopping(escopo) {
-  console.log("🛍️ Executando tratativa de CEP + Número para MANAIRA SHOPPING...");
+  console.log("🛍️ Executando tratativa especial de CEP para MANAIRA SHOPPING...");
 
-  // 1. Lupa do CEP
-  const lupaCEP = escopo.querySelector('#lovZipCode, img[onclick*="ZipCode" i], img[src*="search" i][id*="Zip" i]');
+  const lupaCEP = escopo.querySelector('#lovZipCode, img[onclick*="ZipCode" i], img[src*="search" i][id*="Zip" i]') ||
+    document.getElementById('lovZipCode');
+
   if (lupaCEP) {
     lupaCEP.click();
     await esperar(1500);
   }
 
-  // 2. Linha do CEP
-  const linhaCEP = document.querySelector('table[id*="zip" i] tbody tr:nth-child(2), .ui-jqgrid-btable tr.jqgrow');
-  if (linhaCEP) {
-    linhaCEP.click();
-    await esperar(400);
+  const tabelaZip = document.querySelector('table[id*="zip" i], .ui-jqgrid-btable');
+  if (tabelaZip) {
+    const primeiraLinha = tabelaZip.querySelector('tbody tr.jqgrow, tbody tr:nth-child(2)');
+    if (primeiraLinha) {
+      primeiraLinha.click();
+      const tdQualquer = primeiraLinha.querySelector('td');
+      if (tdQualquer) tdQualquer.click();
+      await esperar(400);
+    }
   }
 
-  // 3. Botão OK do CEP (ID exato extraído do seu DevTools: buttonFiveDialogOK)
-  const btnOkCEP = document.getElementById('buttonFiveDialogOK') ||
+  const btnOk = document.getElementById('buttonFiveDialogOK') ||
     document.getElementById('lovDialogOK') ||
-    Array.from(document.querySelectorAll('button')).find(b => b.innerText.trim().toUpperCase() === 'OK' && b.offsetWidth > 0);
+    Array.from(document.querySelectorAll('button')).find(b => b.innerText?.trim().toUpperCase() === 'OK' && b.offsetWidth > 0);
 
-  if (btnOkCEP) {
-    btnOkCEP.click();
-    await esperar(1000);
+  if (btnOk) {
+    if (window.$ || window.jQuery) {
+      (window.$ || window.jQuery)(btnOk).trigger('click');
+    } else {
+      btnOk.click();
+    }
+    await esperar(1200);
   }
 
-  // 4. Preenche Número (220)
-  const campoNumero = escopo.querySelector('#buildingNumber, input[name*="buildingNumber" i]');
+  const campoNumero = escopo.querySelector('#streetNum, #buildingNumber, input[name*="buildingNumber" i]') ||
+    document.getElementById('streetNum') || document.getElementById('buildingNumber');
+
   if (campoNumero) {
     campoNumero.removeAttribute('disabled');
     campoNumero.removeAttribute('readonly');
     campoNumero.focus();
     campoNumero.click();
+
     atribuirValorInput(campoNumero, "220");
     await esperar(300);
+
+    campoNumero.dispatchEvent(new Event('change', { bubbles: true }));
     campoNumero.dispatchEvent(new Event('blur', { bubbles: true }));
-    console.log("✅ [MANAIRA] Número 220 gravado com sucesso!");
+
+    console.log("✅ [MANAIRA SHOPPING] CEP e Número 220 confirmados!");
   }
 }
 
+// ===========================================================
+// 6. ORQUESTRADOR PRINCIPAL DO CROAMIS
+// ===========================================================
 async function preencherFormularioCroamis(dados) {
   console.log("⚡ Executando automação no CROAMIS para:", dados);
 
@@ -150,14 +311,14 @@ async function preencherFormularioCroamis(dados) {
   await esperar(200);
 
   const pagadorTexto = String(dados.pagador || dados.pagadorFrete || "").toUpperCase();
-  const ehPagadorMatriz = pagadorTexto.includes("REMETENTE");
+  const ehPagadorDestinatario = pagadorTexto.includes("DESTINATARIO") || pagadorTexto.includes("DESTINATÁRIO");
 
   const cnpjMatriz = "43470566002567";
   const cnpjCliente = String(dados.codigoDestinatario || dados.cnpj || "").replace(/\D/g, '');
   const nomeCliente = String(dados.destinatario || dados.nome || "").toUpperCase();
 
   // -----------------------------------------------------------
-  // PASSO A: TOMADOR
+  // PASSO A: TOMADOR (ABA 1)
   // -----------------------------------------------------------
   const tabTomador = document.querySelector('#tabHeader_1 a') || document.getElementById('tabHeader_1');
   if (tabTomador) {
@@ -172,89 +333,77 @@ async function preencherFormularioCroamis(dados) {
     await esperar(300);
   }
 
-  const cnpjTomador = ehPagadorMatriz ? cnpjMatriz : cnpjCliente;
-  if (cnpjTomador) {
-    console.log(`💳 [Tomador] Injetando CNPJ ${cnpjTomador}...`);
-    await preencherEBuscarCNPJ(cnpjTomador, 'tabpage_1');
-  }
+  if (ehPagadorDestinatario) {
+    // REGRA 1: PAGADOR = DESTINATÁRIO (Maceió, Salvador Shopping, Aracaju...)
+    console.log(`💳 [Tomador - Pagador Destinatário] Injetando CNPJ da loja ${cnpjCliente}...`);
+    await preencherEBuscarCNPJ(cnpjCliente, 'tabpage_1');
+    await esperar(1000);
 
-  await esperar(1200);
+    const chkCopiarDestinatario = document.querySelector('#tabpage_1 input[value="Destinatario"], #tabpage_1 input[id*="Destinatario"]');
+    if (chkCopiarDestinatario && !chkCopiarDestinatario.checked) {
+      chkCopiarDestinatario.click();
+      chkCopiarDestinatario.checked = true;
+      chkCopiarDestinatario.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    await esperar(800);
 
-  // Se o Tomador for o Cliente e for MANAIRA SHOPPING, trata o CEP/Número na Aba 1
-  if (!ehPagadorMatriz && (cnpjCliente === "43470566008689" || nomeCliente.includes("MANAIRA"))) {
-    await tratarManairaShopping(document.getElementById('tabpage_1') || document);
-  }
+    // Seleciona e preenche o Remetente (Aba 2) com a MATRIZ
+    const tabRemetente = document.querySelector('#tabHeader_2 a') || document.getElementById('tabHeader_2');
+    if (tabRemetente) {
+      tabRemetente.click();
+      await esperar(500);
+    }
 
-  // IE
-  const mapaIEPorCNPJ = {
-    "43470566003296": "064152774",
-    "43470566008760": "271772492",
-    "43470566009227": "158221702",
-    "43470566002052": "74074254",
-    "43470566010586": "054566657",
-    "43470566011043": "206572883",
-    "43470566005906": "063600323",
-    "43470566008506": "205226973",
-    "43470566009146": "158221710"
-  };
+    const selectTaxRemetente = document.querySelector('#tabpage_2 #taxIdType') || document.getElementById('taxIdType');
+    if (selectTaxRemetente) {
+      selectTaxRemetente.value = "CNPJ";
+      selectTaxRemetente.dispatchEvent(new Event('change', { bubbles: true }));
+      await esperar(300);
+    }
 
-  const ieDesejada = mapaIEPorCNPJ[cnpjCliente];
-  const campoIE = document.querySelector('#tabpage_1 #stateRegistration') || document.getElementById('stateRegistration');
+    console.log(`🏭 [Remetente] Injetando CNPJ da MATRIZ ${cnpjMatriz} + TAB...`);
+    await preencherEBuscarCNPJ(cnpjMatriz, 'tabpage_2');
+    await esperar(1000);
+  } else {
+    // REGRA 2: PAGADOR = REMETENTE (ex: Icaraí, Haight, Tijuca, Batel, Ilha...)
+    // Tomador = CNPJ da MATRIZ | Copiar para = Remetente
+    console.log(`💳 [Tomador - Pagador Remetente] Injetando CNPJ da MATRIZ ${cnpjMatriz}...`);
+    await preencherEBuscarCNPJ(cnpjMatriz, 'tabpage_1');
+    await esperar(1000);
 
-  if (campoIE && ieDesejada) {
-    campoIE.removeAttribute('disabled');
-    campoIE.removeAttribute('readonly');
-    campoIE.focus();
-    atribuirValorInput(campoIE, ieDesejada);
-    await esperar(200);
-    campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
-  }
+    const chkCopiarRemetente = document.querySelector('#tabpage_1 input[value="Remetente"], #tabpage_1 input[id*="Remetente"]');
+    if (chkCopiarRemetente && !chkCopiarRemetente.checked) {
+      chkCopiarRemetente.click();
+      chkCopiarRemetente.checked = true;
+      chkCopiarRemetente.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    await esperar(800);
 
-  // Alocação
-  const valorChkAlocacao = ehPagadorMatriz ? "Remetente" : "Destinatario";
-  const chkAlocacao = document.querySelector(`#tabpage_1 input[value="${valorChkAlocacao}"], #tabpage_1 input[id*="${valorChkAlocacao}"]`);
+    // Seleciona e preenche o Destinatário (Aba 3) com os dados manuais da loja cliente
+    const tabDestinatario = document.querySelector('#tabHeader_3 a') || document.getElementById('tabHeader_3');
+    if (tabDestinatario) {
+      tabDestinatario.click();
+      await esperar(400);
+    }
 
-  if (chkAlocacao && !chkAlocacao.checked) {
-    chkAlocacao.click();
-    chkAlocacao.checked = true;
-    chkAlocacao.dispatchEvent(new Event('change', { bubbles: true }));
-  }
+    if (cnpjCliente) {
+      console.log(`🎯 [Destinatário] Preenchendo dados da loja cliente: ${cnpjCliente}...`);
+      const foiManual = await preencherDestinatarioManual(document.getElementById('tabpage_3') || document, cnpjCliente);
 
-  await esperar(1000);
+      if (!foiManual) {
+        await preencherEBuscarCNPJ(cnpjCliente, 'tabpage_3');
+      }
+    }
 
-  // -----------------------------------------------------------
-  // PASSO B: SEGUNDA PONTA (REMETENTE OU DESTINATÁRIO)
-  // -----------------------------------------------------------
-  const tabRemetente = document.querySelector('#tabHeader_2 a') || document.getElementById('tabHeader_2');
-  if (tabRemetente) {
-    tabRemetente.click();
-    await esperar(400);
-  }
-
-  const selectTaxRem = document.querySelector('#tabpage_2 #taxIdType') || document.getElementById('taxIdType');
-  if (selectTaxRem) {
-    selectTaxRem.value = "CNPJ";
-    selectTaxRem.dispatchEvent(new Event('change', { bubbles: true }));
-    await esperar(300);
-  }
-
-  const cnpjSegundaPonta = ehPagadorMatriz ? cnpjCliente : cnpjMatriz;
-  if (cnpjSegundaPonta) {
-    console.log(`🏭 [Segunda Ponta] Injetando CNPJ ${cnpjSegundaPonta}...`);
-    await preencherEBuscarCNPJ(cnpjSegundaPonta, 'tabpage_2');
-  }
-
-  await esperar(1200);
-
-  // Se a segunda ponta for o MANAIRA SHOPPING (quando Tomador é Remetente), trata CEP/Número na Aba 2
-  if (ehPagadorMatriz && (cnpjCliente === "43470566008689" || nomeCliente.includes("MANAIRA"))) {
-    await tratarManairaShopping(document.getElementById('tabpage_2') || document);
+    if (cnpjCliente === "43470566008689" || nomeCliente.includes("MANAIRA")) {
+      await tratarManairaShopping(document.getElementById('tabpage_3') || document);
+    }
   }
 
   await esperar(500);
 
   // -----------------------------------------------------------
-  // PASSO C: ORIGEM, COMMODITY E HANDLING
+  // PASSO D: ORIGEM, COMMODITY E HANDLING
   // -----------------------------------------------------------
   const campoOrigin = document.getElementById('origin');
   if (campoOrigin) {
@@ -304,9 +453,9 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(500);
 
-  // ===========================================================
-  // PASSO 3: DIMENSÕES (DIMS AND ULD)
-  // ===========================================================
+  // -----------------------------------------------------------
+  // PASSO E: DIMENSÕES (DIMS AND ULD)
+  // -----------------------------------------------------------
   const btnOpenDims = document.getElementById('openDimsAndUld');
   if (btnOpenDims) {
     btnOpenDims.click();
@@ -398,9 +547,9 @@ async function preencherFormularioCroamis(dados) {
   await fecharAlertasModal();
   await esperar(800);
 
-  // ===========================================================
-  // PASSO 4: TRATAMENTO -> SERVIÇO -> PRODUTO
-  // ===========================================================
+  // -----------------------------------------------------------
+  // PASSO F: TRATAMENTO -> SERVIÇO -> PRODUTO (MANAUARA = ST5BA)
+  // -----------------------------------------------------------
   const campoTreatment = document.getElementById('treatment') || document.querySelector('input[name*="treatment" i], select[name*="treatment" i]');
   if (campoTreatment) {
     if (campoTreatment.tagName === 'SELECT') {
@@ -424,7 +573,10 @@ async function preencherFormularioCroamis(dados) {
   await esperar(400);
 
   let produtoFinal = "ST3BA";
-  if (
+  if (nomeCliente.includes("MANAUARA") || cnpjCliente.includes("43470566010586")) {
+    produtoFinal = "ST5BA";
+  } else if (
+    MAPA_REMETENTES_DADOS[cnpjCliente] ||
     nomeCliente.includes("SALVADOR") ||
     nomeCliente.includes("MACEIO") ||
     nomeCliente.includes("NATAL") ||
@@ -436,8 +588,6 @@ async function preencherFormularioCroamis(dados) {
     cnpjCliente.includes("43470566011043")
   ) {
     produtoFinal = "ST2BA";
-  } else if (nomeCliente.includes("MANAUARA") || cnpjCliente.includes("43470566010586")) {
-    produtoFinal = "ST5BA";
   }
 
   const elProduct = document.getElementById('productCode') || document.getElementById('product');
@@ -458,9 +608,9 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(500);
 
-  // ===========================================================
-  // PASSO 5: NOTA FISCAL (e-Doc -> NF Electronic -> GRID)
-  // ===========================================================
+  // -----------------------------------------------------------
+  // PASSO G: NOTA FISCAL (e-Doc -> NF Electronic -> GRID)
+  // -----------------------------------------------------------
   const listaNfes = (dados.listaNfes && dados.listaNfes.length > 0) ? dados.listaNfes : [
     { chaveNfe: dados.chaveNfe || "", valorTotalProduto: dados.valorTotalProduto || "0" }
   ];
@@ -483,7 +633,7 @@ async function preencherFormularioCroamis(dados) {
 
     let valorFormatado = String(nf.valorTotalProduto || "0").replace(',', '.');
     valorFormatado = parseFloat(valorFormatado).toFixed(2);
-    if (valorFormatado === "NaN") valorFormatado = "0.00";
+    if (valorFormatado === "NaN" || valorFormatado === "0.00") valorFormatado = "15000.00";
 
     const btnAdd = document.querySelector('#NFElectronicGridA .ui-pg-div') ||
       document.querySelector('#NFElectronicGridA') ||
@@ -514,6 +664,7 @@ async function preencherFormularioCroamis(dados) {
     }
     await esperar(300);
 
+    // 1. Chave de Acesso
     const tdChave = trAtual.querySelector('td[aria-describedby*="accessKey"]');
     if (tdChave) {
       tdChave.click();
@@ -539,6 +690,7 @@ async function preencherFormularioCroamis(dados) {
       await esperar(300);
     }
 
+    // 2. Valor da Carga
     const tdValor = trAtual.querySelector('td[aria-describedby*="cargoValue"]');
     if (tdValor) {
       tdValor.click();
@@ -555,14 +707,18 @@ async function preencherFormularioCroamis(dados) {
       if (window.$ || window.jQuery) {
         (window.$ || window.jQuery)(inputValor).val(valorFormatado).trigger("input").trigger("change");
       } else {
-        inputValor.value = valorFormatado;
-        inputValor.dispatchEvent(new Event('input', { bubbles: true }));
-        inputValor.dispatchEvent(new Event('change', { bubbles: true }));
+        atribuirValorInput(inputValor, valorFormatado);
       }
 
+      await esperar(200);
+
       inputValor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, code: 'Enter', bubbles: true }));
+      inputValor.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', keyCode: 13, code: 'Enter', bubbles: true }));
+      inputValor.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', keyCode: 13, code: 'Enter', bubbles: true }));
+
+      inputValor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
       inputValor.dispatchEvent(new Event('blur', { bubbles: true }));
-      await esperar(300);
+      await esperar(400);
     }
 
     if (window.$ || window.jQuery) {
@@ -573,12 +729,19 @@ async function preencherFormularioCroamis(dados) {
     await esperar(600);
   }
 
+  const campoValorCargaPrincipal = document.getElementById('declaredValue') || document.getElementById('cargoValue');
+  if (campoValorCargaPrincipal) {
+    const vTotal = (listaNfes && listaNfes[0] && listaNfes[0].valorTotalProduto) ? listaNfes[0].valorTotalProduto : "15000.00";
+    atribuirValorInput(campoValorCargaPrincipal, String(vTotal).replace(',', '.'));
+    campoValorCargaPrincipal.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+
   if (document.activeElement) document.activeElement.blur();
   await esperar(500);
 
-  // ===========================================================
-  // PASSO 6: AD-VALOREM + SEGURO
-  // ===========================================================
+  // -----------------------------------------------------------
+  // PASSO H: AD-VALOREM + SEGURO
+  // -----------------------------------------------------------
   const selectAdValorem = document.getElementById('insurance');
 
   if (selectAdValorem) {
@@ -624,9 +787,9 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(800);
 
-  // ===========================================================
-  // PASSO 7: ITINERÁRIO DE VOO
-  // ===========================================================
+  // -----------------------------------------------------------
+  // PASSO I: ITINERÁRIO DE VOO
+  // -----------------------------------------------------------
   if (document.activeElement) document.activeElement.blur();
   await esperar(300);
 
@@ -779,9 +942,9 @@ async function preencherFormularioCroamis(dados) {
   }
   await esperar(600);
 
-  // ===========================================================
-  // PASSO 8: CLIQUE EM EMITIR CTE + OVERRIDE
-  // ===========================================================
+  // -----------------------------------------------------------
+  // PASSO J: EMITIR CTE + OVERRIDE
+  // -----------------------------------------------------------
   if (document.activeElement) document.activeElement.blur();
   await esperar(1000);
 
