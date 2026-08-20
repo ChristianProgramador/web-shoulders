@@ -58,8 +58,20 @@ async function fecharAlertasModal() {
 }
 
 // ===========================================================
-// 3. MAPA E PREENCHIMENTO MANUAL DAS LOJAS NO DESTINATÁRIO
+// 3. MAPA E PREENCHIMENTO MANUAL DE DESTINATÁRIOS E IE
 // ===========================================================
+const MAPA_IE_DESTINATARIOS_PAGANTES = {
+  "43470566003296": "064152774", // IGUATEMI FORTALEZA
+  "43470566008760": "271772492", // RIO MAR ARACAJU
+  "43470566011043": "158221710", // SHOPPING GRAO PARA
+  "43470566008506": "158221702", // BOULEVARD BELEM
+  "43470566005906": "063600323", // RIO MAR FORTALEZA
+  "43470566002052": "74074254",  // SALVADOR SHOPPING
+  "43470566007445": "206572883", // MIDWAY
+  "43470566010586": "054566657", // MANAUARA
+  "43470566008093": "205226973"  // NATAL
+};
+
 const MAPA_REMETENTES_DADOS = {
   "43470566007100": { nome: "LEBLON", cep: "22430060", ie: "87400689", numero: "290", produto: "ST2BA" },
   "43470566009065": { nome: "ICARAI", cep: "24220215", ie: "12336730", numero: "239", produto: "ST2BA" },
@@ -76,9 +88,33 @@ const MAPA_REMETENTES_DADOS = {
   "43470566007879": { nome: "BATEL", cep: "80420090", ie: "9077812161", numero: "1868", produto: "ST2BA" },
   "43470566012368": { nome: "CATUAÍ LONDRINA", cep: "86050901", ie: "9113106783", numero: "5600", endereco: "LOC CELSO GARCIA CID", produto: "ST2BA" },
   "43470566012287": { nome: "CATUAÍ MARINGA", cep: "87070000", ie: "9112829170", numero: "9161", produto: "ST2BA" },
-  "43470566010403": { nome: "ILHA", cep: "65074115", ie: "127945555", numero: "987", produto: "ST2BA" },
-  "43470566010586": { nome: "MANAUARA", cep: "69057002", ie: "054566657", numero: "1300", produto: "ST5BA" }
+  "43470566010403": { nome: "ILHA", cep: "65074115", ie: "127945555", numero: "987", produto: "ST3BA" },
+  "43470566013763": { nome: "RIO POTY", cep: "64003087", ie: "197955983", numero: "911", produto: "ST3BA" }
 };
+
+async function preencherIEDestinatarioPagante(escopo, cnpjAlvo) {
+  const ieValor = MAPA_IE_DESTINATARIOS_PAGANTES[cnpjAlvo];
+  if (!ieValor) return;
+
+  await esperar(500);
+
+  const campoIE = escopo.querySelector('#stateRegistration, input[id*="stateRegistration" i]') ||
+    document.getElementById('stateRegistration');
+
+  if (campoIE) {
+    console.log(`📝 Injetando IE (${ieValor}) para o CNPJ ${cnpjAlvo}...`);
+    campoIE.removeAttribute('readonly');
+    campoIE.removeAttribute('disabled');
+    campoIE.focus();
+    campoIE.click();
+
+    atribuirValorInput(campoIE, ieValor);
+
+    await esperar(200);
+    campoIE.dispatchEvent(new Event('change', { bubbles: true }));
+    campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
+}
 
 async function preencherDestinatarioManual(escopo, cnpjAlvo) {
   const dados = MAPA_REMETENTES_DADOS[cnpjAlvo];
@@ -86,7 +122,6 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
 
   console.log(`✍️ [Destinatário Manual] Preenchendo dados de: ${dados.nome}`);
 
-  // 1. Tipo = CNPJ
   const selectTax = escopo.querySelector('#taxIdType') || document.getElementById('taxIdType');
   if (selectTax) {
     selectTax.value = "CNPJ";
@@ -94,7 +129,6 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
     await esperar(300);
   }
 
-  // 2. Preenche o CNPJ e dispara TAB (Blur)
   const campoCNPJ = escopo.querySelector('#customerCode, #taxIdNumber, input[name*="taxId" i], input[name*="customer" i]') ||
     document.getElementById('taxIdNumber');
 
@@ -109,7 +143,6 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
     await esperar(800);
   }
 
-  // 3. Nome do Cliente (Sempre SHOULDER S.A.)
   const campoNome = escopo.querySelector('#customerName, input[id*="customerName" i]');
   if (campoNome) {
     campoNome.removeAttribute('readonly');
@@ -118,7 +151,6 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
     campoNome.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  // 4. CEP com simulação de TAB para puxar o Endereço
   const campoCEP = escopo.querySelector('#zipCode, input[id*="zip" i]');
   if (campoCEP) {
     campoCEP.removeAttribute('readonly');
@@ -135,7 +167,6 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
     await esperar(1000);
   }
 
-  // 5. Inscrição Estadual (IE)
   const campoIE = escopo.querySelector('#stateRegistration, input[id*="stateRegistration" i]');
   if (campoIE) {
     campoIE.removeAttribute('readonly');
@@ -145,7 +176,6 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
     campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  // 6. Código CNAE (Sempre 4930202)
   const campoCNAE = escopo.querySelector('#cnaeCode, input[id*="cnae" i]');
   if (campoCNAE) {
     campoCNAE.removeAttribute('readonly');
@@ -154,7 +184,6 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
     campoCNAE.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  // 7. Endereço (Apenas para Catuaí Londrina)
   const campoEndereco = escopo.querySelector('#address, input[id*="address" i]');
   if (campoEndereco) {
     if (cnpjAlvo === "43470566012368" && dados.endereco) {
@@ -165,7 +194,6 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
     }
   }
 
-  // 8. Número (#streetNum)
   const campoNumero = escopo.querySelector('#streetNum, #buildingNumber, input[id*="streetNum" i], input[id*="buildingNumber" i]') ||
     document.getElementById('streetNum');
 
@@ -186,7 +214,7 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
 }
 
 // ===========================================================
-// 4. BUSCA PADRÃO POR CNPJ (LUPA + SIMULAÇÃO DE TAB/BLUR)
+// 4. BUSCA PADRÃO POR CNPJ (LUPA)
 // ===========================================================
 async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
   const escopo = abaId ? document.getElementById(abaId) : document;
@@ -204,15 +232,12 @@ async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
   atribuirValorInput(campoCNPJ, cnpjValor);
   await esperar(300);
 
-  // Dispara a tecla TAB e o evento de Blur para ativar o callback nativo do CROAMIS
   campoCNPJ.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
-  campoCNPJ.dispatchEvent(new KeyboardEvent('keyup', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
   campoCNPJ.dispatchEvent(new Event('change', { bubbles: true }));
   campoCNPJ.dispatchEvent(new Event('blur', { bubbles: true }));
 
-  await esperar(1000); // Aguarda o retorno dos dados da Matriz via AJAX
+  await esperar(1000);
 
-  // Caso o sistema exija clicar na Lupa por não preencher via TAB sozinho
   const iconeLupa = escopo.querySelector('img[src*="search" i], img[src*="lov" i], img[onclick*="customer" i]') ||
     campoCNPJ.parentElement.querySelector('img');
 
@@ -318,7 +343,7 @@ async function preencherFormularioCroamis(dados) {
   const nomeCliente = String(dados.destinatario || dados.nome || "").toUpperCase();
 
   // -----------------------------------------------------------
-  // PASSO A: TOMADOR (ABA 1)
+  // PASSO A: TOMADOR E REMETENTE/DESTINATÁRIO
   // -----------------------------------------------------------
   const tabTomador = document.querySelector('#tabHeader_1 a') || document.getElementById('tabHeader_1');
   if (tabTomador) {
@@ -337,7 +362,9 @@ async function preencherFormularioCroamis(dados) {
     // REGRA 1: PAGADOR = DESTINATÁRIO (Maceió, Salvador Shopping, Aracaju...)
     console.log(`💳 [Tomador - Pagador Destinatário] Injetando CNPJ da loja ${cnpjCliente}...`);
     await preencherEBuscarCNPJ(cnpjCliente, 'tabpage_1');
-    await esperar(1000);
+    await esperar(800);
+
+    await preencherIEDestinatarioPagante(document.getElementById('tabpage_1') || document, cnpjCliente);
 
     const chkCopiarDestinatario = document.querySelector('#tabpage_1 input[value="Destinatario"], #tabpage_1 input[id*="Destinatario"]');
     if (chkCopiarDestinatario && !chkCopiarDestinatario.checked) {
@@ -347,7 +374,6 @@ async function preencherFormularioCroamis(dados) {
     }
     await esperar(800);
 
-    // Seleciona e preenche o Remetente (Aba 2) com a MATRIZ
     const tabRemetente = document.querySelector('#tabHeader_2 a') || document.getElementById('tabHeader_2');
     if (tabRemetente) {
       tabRemetente.click();
@@ -361,12 +387,12 @@ async function preencherFormularioCroamis(dados) {
       await esperar(300);
     }
 
-    console.log(`🏭 [Remetente] Injetando CNPJ da MATRIZ ${cnpjMatriz} + TAB...`);
+    console.log(`🏭 [Remetente] Injetando CNPJ da MATRIZ ${cnpjMatriz}...`);
     await preencherEBuscarCNPJ(cnpjMatriz, 'tabpage_2');
     await esperar(1000);
+
   } else {
-    // REGRA 2: PAGADOR = REMETENTE (ex: Icaraí, Haight, Tijuca, Batel, Ilha...)
-    // Tomador = CNPJ da MATRIZ | Copiar para = Remetente
+    // REGRA 2: PAGADOR = REMETENTE (Icaraí, Haight, Tijuca, Batel, Ilha, Rio Poty...)
     console.log(`💳 [Tomador - Pagador Remetente] Injetando CNPJ da MATRIZ ${cnpjMatriz}...`);
     await preencherEBuscarCNPJ(cnpjMatriz, 'tabpage_1');
     await esperar(1000);
@@ -379,7 +405,6 @@ async function preencherFormularioCroamis(dados) {
     }
     await esperar(800);
 
-    // Seleciona e preenche o Destinatário (Aba 3) com os dados manuais da loja cliente
     const tabDestinatario = document.querySelector('#tabHeader_3 a') || document.getElementById('tabHeader_3');
     if (tabDestinatario) {
       tabDestinatario.click();
@@ -548,7 +573,7 @@ async function preencherFormularioCroamis(dados) {
   await esperar(800);
 
   // -----------------------------------------------------------
-  // PASSO F: TRATAMENTO -> SERVIÇO -> PRODUTO (MANAUARA = ST5BA)
+  // PASSO F: TRATAMENTO -> SERVIÇO -> PRODUTO (MANAUARA = ST5BA | ILHA/POTY = ST3BA)
   // -----------------------------------------------------------
   const campoTreatment = document.getElementById('treatment') || document.querySelector('input[name*="treatment" i], select[name*="treatment" i]');
   if (campoTreatment) {
@@ -572,11 +597,11 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(400);
 
-  let produtoFinal = "ST3BA";
+  let produtoFinal = "ST3BA"; // Padrão
   if (nomeCliente.includes("MANAUARA") || cnpjCliente.includes("43470566010586")) {
     produtoFinal = "ST5BA";
   } else if (
-    MAPA_REMETENTES_DADOS[cnpjCliente] ||
+    (MAPA_REMETENTES_DADOS[cnpjCliente] && cnpjCliente !== "43470566010403" && cnpjCliente !== "43470566013763") ||
     nomeCliente.includes("SALVADOR") ||
     nomeCliente.includes("MACEIO") ||
     nomeCliente.includes("NATAL") ||
@@ -628,30 +653,28 @@ async function preencherFormularioCroamis(dados) {
     await esperar(600);
   }
 
+  let somaTotalCarga = 0;
+
   for (let i = 0; i < listaNfes.length; i++) {
     const nf = listaNfes[i];
 
-    let valorFormatado = String(nf.valorTotalProduto || "0").replace(',', '.');
-    valorFormatado = parseFloat(valorFormatado).toFixed(2);
-    if (valorFormatado === "NaN" || valorFormatado === "0.00") valorFormatado = "15000.00";
+    let valorNumerico = parseFloat(String(nf.valorTotalProduto || "0").replace(',', '.'));
+    if (isNaN(valorNumerico) || valorNumerico === 0) valorNumerico = 15000.00;
+
+    somaTotalCarga += valorNumerico;
+    const valorFormatado = valorNumerico.toFixed(2);
 
     const btnAdd = document.querySelector('#NFElectronicGridA .ui-pg-div') ||
       document.querySelector('#NFElectronicGridA') ||
       document.getElementById('add_nfe');
+
     if (btnAdd) {
       btnAdd.click();
       await esperar(800);
     }
 
-    let trAtual = null;
-    let tentativas = 0;
-    while (tentativas < 10) {
-      const linhasGrid = document.querySelectorAll('#NFElectronicGrid tr.jqgrow, #NFElectronicGrid tr[role="row"]:not(.jqgfirstrow)');
-      trAtual = linhasGrid[i] || linhasGrid[linhasGrid.length - 1];
-      if (trAtual) break;
-      tentativas++;
-      await esperar(500);
-    }
+    const linhasGrid = document.querySelectorAll('#NFElectronicGrid tr.jqgrow, #NFElectronicGrid tr[role="row"]:not(.jqgfirstrow)');
+    const trAtual = linhasGrid[i] || linhasGrid[linhasGrid.length - 1];
 
     if (!trAtual) continue;
 
@@ -666,37 +689,19 @@ async function preencherFormularioCroamis(dados) {
 
     // 1. Chave de Acesso
     const tdChave = trAtual.querySelector('td[aria-describedby*="accessKey"]');
-    if (tdChave) {
-      tdChave.click();
-      tdChave.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-      await esperar(200);
-    }
-
     let inputChave = document.getElementById(`${idLinhaReal}_accessKey`) || (tdChave ? tdChave.querySelector('input') : null);
 
     if (inputChave) {
       inputChave.focus();
-      inputChave.click();
-
-      if (window.$ || window.jQuery) {
-        (window.$ || window.jQuery)(inputChave).val(nf.chaveNfe).trigger("input").trigger("change");
-      } else {
-        inputChave.value = nf.chaveNfe;
-        inputChave.dispatchEvent(new Event('input', { bubbles: true }));
-        inputChave.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-
-      inputChave.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
-      await esperar(300);
+      inputChave.value = nf.chaveNfe;
+      inputChave.dispatchEvent(new Event('input', { bubbles: true }));
+      inputChave.dispatchEvent(new Event('change', { bubbles: true }));
+      await esperar(200);
     }
 
     // 2. Valor da Carga
     const tdValor = trAtual.querySelector('td[aria-describedby*="cargoValue"]');
-    if (tdValor) {
-      tdValor.click();
-      tdValor.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-      await esperar(300);
-    }
+    if (tdValor) tdValor.click();
 
     let inputValor = document.getElementById(`${idLinhaReal}_cargoValue`) || (tdValor ? tdValor.querySelector('input') : null);
 
@@ -707,32 +712,53 @@ async function preencherFormularioCroamis(dados) {
       if (window.$ || window.jQuery) {
         (window.$ || window.jQuery)(inputValor).val(valorFormatado).trigger("input").trigger("change");
       } else {
-        atribuirValorInput(inputValor, valorFormatado);
+        inputValor.value = valorFormatado;
+        inputValor.dispatchEvent(new Event('input', { bubbles: true }));
+        inputValor.dispatchEvent(new Event('change', { bubbles: true }));
       }
 
-      await esperar(200);
+      await esperar(300);
 
-      inputValor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, code: 'Enter', bubbles: true }));
-      inputValor.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', keyCode: 13, code: 'Enter', bubbles: true }));
-      inputValor.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', keyCode: 13, code: 'Enter', bubbles: true }));
-
-      inputValor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
+      console.log(`⚡ Disparando ENTER na célula de valor da NF ${i + 1}...`);
+      inputValor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, code: 'Enter', which: 13, bubbles: true }));
+      inputValor.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', keyCode: 13, code: 'Enter', which: 13, bubbles: true }));
+      inputValor.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', keyCode: 13, code: 'Enter', which: 13, bubbles: true }));
+      inputValor.dispatchEvent(new Event('change', { bubbles: true }));
       inputValor.dispatchEvent(new Event('blur', { bubbles: true }));
-      await esperar(400);
     }
+
+    await esperar(300);
 
     if (window.$ || window.jQuery) {
       try {
         (window.$ || window.jQuery)('#NFElectronicGrid').jqGrid('saveRow', idLinhaReal);
       } catch (e) { }
     }
-    await esperar(600);
+    await esperar(500);
   }
 
-  const campoValorCargaPrincipal = document.getElementById('declaredValue') || document.getElementById('cargoValue');
+  // 3. INJEÇÃO DA SOMA NO CAMPO PRINCIPAL (#cargoValue)
+  const valorTotalConsolidado = somaTotalCarga.toFixed(2);
+  console.log(`💰 Total Consolidado das NFs: R$ ${valorTotalConsolidado}`);
+
+  const campoValorCargaPrincipal = document.getElementById('cargoValue') ||
+    document.querySelector('input#cargoValue') ||
+    document.getElementById('declaredValue');
+
   if (campoValorCargaPrincipal) {
-    const vTotal = (listaNfes && listaNfes[0] && listaNfes[0].valorTotalProduto) ? listaNfes[0].valorTotalProduto : "15000.00";
-    atribuirValorInput(campoValorCargaPrincipal, String(vTotal).replace(',', '.'));
+    campoValorCargaPrincipal.focus();
+    campoValorCargaPrincipal.click();
+
+    if (window.$ || window.jQuery) {
+      (window.$ || window.jQuery)(campoValorCargaPrincipal).val(valorTotalConsolidado).trigger("input").trigger("change");
+    } else {
+      atribuirValorInput(campoValorCargaPrincipal, valorTotalConsolidado);
+    }
+
+    await esperar(200);
+
+    campoValorCargaPrincipal.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
+    campoValorCargaPrincipal.dispatchEvent(new Event('change', { bubbles: true }));
     campoValorCargaPrincipal.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
@@ -943,77 +969,83 @@ async function preencherFormularioCroamis(dados) {
   await esperar(600);
 
   // -----------------------------------------------------------
-  // PASSO J: EMITIR CTE + OVERRIDE
+  // PASSO J: EMITIR CTE + OVERRIDE (DESATIVADO TEMPORARIAMENTE)
   // -----------------------------------------------------------
-  if (document.activeElement) document.activeElement.blur();
-  await esperar(1000);
+  const PERMITIR_EMISSAO_AUTOMATICA = false;
 
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-  await esperar(800);
-
-  function buscarElementoEmitirCte() {
-    let escopos = [document];
-    const iframes = document.querySelectorAll('iframe');
-    iframes.forEach(iframe => {
-      try {
-        if (iframe.contentDocument) escopos.push(iframe.contentDocument);
-      } catch (e) { }
-    });
-
-    for (let escopo of escopos) {
-      let btn = escopo.getElementById('issCTE') ||
-        escopo.querySelector('input[value*="Emitir Cte" i]') ||
-        escopo.querySelector('input#issCTE') ||
-        Array.from(escopo.querySelectorAll('input[type="button"], button')).find(
-          el => el.value?.trim().toLowerCase() === "emitir cte" || el.innerText?.trim().toLowerCase() === "emitir cte"
-        );
-      if (btn) return btn;
-    }
-    return null;
-  }
-
-  let btnEmitirCte = null;
-  let tentativasBtn = 0;
-
-  while (!btnEmitirCte && tentativasBtn < 12) {
-    btnEmitirCte = buscarElementoEmitirCte();
-    if (!btnEmitirCte) {
-      tentativasBtn++;
-      await esperar(500);
-    }
-  }
-
-  if (btnEmitirCte) {
-    btnEmitirCte.focus();
-    btnEmitirCte.click();
-  }
-
-  await esperar(2500);
-
-  function buscarBtnOverride() {
-    let escopos = [document];
-    const iframes = document.querySelectorAll('iframe');
-    iframes.forEach(iframe => {
-      try {
-        if (iframe.contentDocument) escopos.push(iframe.contentDocument);
-      } catch (e) { }
-    });
-
-    for (let escopo of escopos) {
-      let btn = escopo.getElementById('SHP051.button.ack') ||
-        escopo.querySelector('button[id*="ack" i]') ||
-        Array.from(escopo.querySelectorAll('button, input[type="button"]')).find(
-          b => b.value?.includes("Override") || b.innerText?.includes("Override and save")
-        );
-      if (btn && btn.offsetWidth > 0) return btn;
-    }
-    return null;
-  }
-
-  const btnOverride = buscarBtnOverride();
-  if (btnOverride) {
-    btnOverride.focus();
-    btnOverride.click();
+  if (PERMITIR_EMISSAO_AUTOMATICA) {
+    if (document.activeElement) document.activeElement.blur();
     await esperar(1000);
+
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    await esperar(800);
+
+    function buscarElementoEmitirCte() {
+      let escopos = [document];
+      const iframes = document.querySelectorAll('iframe');
+      iframes.forEach(iframe => {
+        try {
+          if (iframe.contentDocument) escopos.push(iframe.contentDocument);
+        } catch (e) { }
+      });
+
+      for (let escopo of escopos) {
+        let btn = escopo.getElementById('issCTE') ||
+          escopo.querySelector('input[value*="Emitir Cte" i]') ||
+          escopo.querySelector('input#issCTE') ||
+          Array.from(escopo.querySelectorAll('input[type="button"], button')).find(
+            el => el.value?.trim().toLowerCase() === "emitir cte" || el.innerText?.trim().toLowerCase() === "emitir cte"
+          );
+        if (btn) return btn;
+      }
+      return null;
+    }
+
+    let btnEmitirCte = null;
+    let tentativasBtn = 0;
+
+    while (!btnEmitirCte && tentativasBtn < 12) {
+      btnEmitirCte = buscarElementoEmitirCte();
+      if (!btnEmitirCte) {
+        tentativasBtn++;
+        await esperar(500);
+      }
+    }
+
+    if (btnEmitirCte) {
+      btnEmitirCte.focus();
+      btnEmitirCte.click();
+    }
+
+    await esperar(2500);
+
+    function buscarBtnOverride() {
+      let escopos = [document];
+      const iframes = document.querySelectorAll('iframe');
+      iframes.forEach(iframe => {
+        try {
+          if (iframe.contentDocument) escopos.push(iframe.contentDocument);
+        } catch (e) { }
+      });
+
+      for (let escopo of escopos) {
+        let btn = escopo.getElementById('SHP051.button.ack') ||
+          escopo.querySelector('button[id*="ack" i]') ||
+          Array.from(escopo.querySelectorAll('button, input[type="button"]')).find(
+            b => b.value?.includes("Override") || b.innerText?.includes("Override and save")
+          );
+        if (btn && btn.offsetWidth > 0) return btn;
+      }
+      return null;
+    }
+
+    const btnOverride = buscarBtnOverride();
+    if (btnOverride) {
+      btnOverride.focus();
+      btnOverride.click();
+      await esperar(1000);
+    }
+  } else {
+    console.log("⏸️ Emissão automática bloqueada (PERMITIR_EMISSAO_AUTOMATICA = false).");
   }
 }
