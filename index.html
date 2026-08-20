@@ -699,6 +699,14 @@
             salvarCacheLocal();
         }
 
+        // 🎯 FUNÇÃO PARA ALTERAR A MEDIDA DIRETAMENTE NA TABELA
+        function alterarMedidaDireta(indexOriginal, novaMedida) {
+            if (lotesSessaoAtual[indexOriginal]) {
+                lotesSessaoAtual[indexOriginal].medida = novaMedida;
+                salvarCacheLocal();
+            }
+        }
+
         function renderizarListaDeLotes() {
             const container = document.getElementById('container-lista-lotes');
             const tagClientesUnicos = document.getElementById('count-clientes-unicos');
@@ -794,9 +802,22 @@
                         subtotalMedidas[cx.medida].vol += cx.quantidade;
                         subtotalMedidas[cx.medida].peso += cx.peso;
 
+                        const medAtual = String(cx.medida || "").trim().toUpperCase();
+
                         html += `
                             <tr>
-                                <td>${cx.medida}</td>
+                                <td>
+                                    <select class="select-medida-linha" 
+                                            style="font-weight: 600; padding: 2px 4px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer;"
+                                            onchange="alterarMedidaDireta(${cx.originalIndex}, this.value)">
+                                        <option value="PADRÃO" ${medAtual === 'PADRÃO' || medAtual.includes('60X39X33') ? 'selected' : ''}>PADRÃO (60x39x33)</option>
+                                        <option value="60x39x23" ${medAtual.includes('60X39X23') ? 'selected' : ''}>60x39x23</option>
+                                        <option value="60x39x10" ${medAtual.includes('60X39X10') ? 'selected' : ''}>60x39x10</option>
+                                        <option value="66x60x10" ${medAtual.includes('66X60X10') ? 'selected' : ''}>66x60x10</option>
+                                        <option value="39x33x23" ${medAtual.includes('39X33X23') ? 'selected' : ''}>39x33x23</option>
+                                        <option value="39x33x10" ${medAtual.includes('39X33X10') ? 'selected' : ''}>39x33x10</option>
+                                    </select>
+                                </td>
                                 <td>${cx.quantidade}</td>
                                 <td>${cx.peso.toFixed(1)} Kg</td>
                                 <td>
