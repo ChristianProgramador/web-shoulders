@@ -28,10 +28,34 @@ if (window.location.href.includes("croamis.latamcargo.com")) {
 }
 
 // ===========================================================
-// 2. FUNÇÕES AUXILIARES DE SUPORTE
+// 2. FUNÇÕES AUXILIARES DE SUPORTE (COM WEB WORKER ANTI-TRAVAMENTO)
 // ===========================================================
+
+// Worker embutido via Blob para impedir que o Edge atrase os timers em abas de fundo
+const workerTimerCode = `
+  self.onmessage = function(e) {
+    setTimeout(function() {
+      self.postMessage(e.data);
+    }, e.data.ms);
+  };
+`;
+const blobWorker = new Blob([workerTimerCode], { type: 'application/javascript' });
+const workerTimerUrl = URL.createObjectURL(blobWorker);
+
 function esperar(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    try {
+      const worker = new Worker(workerTimerUrl);
+      worker.onmessage = function () {
+        worker.terminate();
+        resolve();
+      };
+      worker.postMessage({ ms: ms });
+    } catch (e) {
+      // Fallback em caso de bloqueio estrito de CSP
+      setTimeout(resolve, ms);
+    }
+  });
 }
 
 function atribuirValorInput(inputElement, valor) {
@@ -51,7 +75,30 @@ async function fecharAlertasModal() {
       if (btn.offsetWidth > 0 && btn.offsetHeight > 0) {
         console.log("⚠️ Fechando alerta modal detectado na tela...");
         btn.click();
-        await esperar(500);
+        await esperar(400);
+      }
+    }
+  }
+}
+
+function atribuirValorInput(inputElement, valor) {
+  if (!inputElement) return;
+  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+  nativeSetter.call(inputElement, valor);
+  inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+  inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+async function fecharAlertasModal() {
+  const botoesModal = Array.from(document.querySelectorAll('button, input[type="button"], a, .ui-dialog-buttonpane button'));
+
+  for (let btn of botoesModal) {
+    const texto = (btn.value || btn.innerText || '').trim().toLowerCase();
+    if (texto === 'fechar' || texto === 'close' || texto === 'ok') {
+      if (btn.offsetWidth > 0 && btn.offsetHeight > 0) {
+        console.log("⚠️ Fechando alerta modal detectado na tela...");
+        btn.click();
+        await esperar(400);
       }
     }
   }
