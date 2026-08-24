@@ -9,14 +9,17 @@ body {
     padding: 20px;
 }
 
+/* Ajustado para crescer em telas grandes */
 .container {
     max-width: 650px;
+    /* Padrão Mobile */
     margin: 0 auto;
     background: #ffffff;
     padding: 25px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     text-align: center;
+    transition: max-width 0.3s ease;
 }
 
 h1 {
@@ -41,6 +44,49 @@ h1 {
 
 .link-navegacao:hover {
     text-decoration: underline;
+}
+
+/* ==========================================================================
+   LAYOUT RESPONSIVO LADO A LADO (DESKTOP vs MOBILE)
+   ========================================================================== */
+
+/* Envolva o Formulário e a Busca/Lista dentro desta div no HTML */
+.painel-split {
+    display: flex;
+    flex-direction: column;
+    /* No Celular: um abaixo do outro */
+    gap: 20px;
+    width: 100%;
+}
+
+.coluna-esquerda,
+.coluna-direita {
+    width: 100%;
+}
+
+/* 💻 REGRAS PARA COMPUTADOR / DESKTOP (Telas a partir de 900px) */
+@media (min-width: 900px) {
+    .container {
+        max-width: 1200px;
+        /* Expande a largura máxima para caber os 2 lados */
+    }
+
+    .painel-split {
+        flex-direction: row;
+        /* Coloca Lado a Lado */
+        align-items: flex-start;
+    }
+
+    .coluna-esquerda {
+        flex: 1;
+        position: sticky;
+        top: 20px;
+        /* Mantém o formulário fixo na tela durante a rolagem */
+    }
+
+    .coluna-direita {
+        flex: 1;
+    }
 }
 
 /* ==========================================================================

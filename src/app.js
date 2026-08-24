@@ -12,7 +12,7 @@ let dadosNovaRemessa = { data: "", cnpj: "", destinatario: "", pallet: "", peso:
 let iaVozAtivada = true;
 let contextoDoDia = [];
 
-const urlAPI = "https://script.google.com/macros/s/AKfycby2zfEvuyFxV_nuNrno9jtiBCiRX9eWf8rWBh6hnC08kCVtYR9OjfolDU4SVpCmhbc8/exec";
+const urlAPI = "https://script.google.com/macros/s/AKfycbzp7-DOCnoDL0Xx3t2AC5zfr2yU6eV4c2j115VZt9EE1ecXrup8kkeTLaEAaXGTF7Di/exec";
 
 const dicionarioCNPJResumo = {
     "plaza casa forte": "43470566006716",

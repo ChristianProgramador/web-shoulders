@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shoulders - Resumo de Fechamento</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <link rel="stylesheet" href="./src/css/style.css">
     <link rel="stylesheet" href="./src/css/responsive.css">
     <style>
@@ -100,10 +102,6 @@
             user-select: none;
         }
 
-        .header-data-toggle:hover {
-            background: #e8f0fe;
-        }
-
         .conteudo-data-group {
             padding: 15px;
             display: block;
@@ -120,11 +118,32 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
         }
 
+        .header-cliente-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
         .cliente-titulo {
             font-size: 16px;
             font-weight: bold;
             color: #1a73e8;
-            margin-bottom: 2px;
+        }
+
+        .btn-excluir-lote-topo {
+            background: #fce8e6;
+            color: #d93025;
+            border: 1px solid #f5c2c0;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-excluir-lote-topo:hover {
+            background: #f8d7da;
         }
 
         .cliente-cnpj {
@@ -260,39 +279,16 @@
             box-shadow: 0 3px 6px rgba(26, 115, 232, 0.25);
         }
 
-        .btn-emitir-latam:hover {
-            background: #1557b0;
-        }
-
         .status-carregando {
             color: #666;
             font-style: italic;
             padding: 15px;
         }
-
-        .btn-excluir-caixa-resumo {
-            background: #fce8e6;
-            color: #d93025;
-            border: 1px solid #f5c2c0;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-left: 4px;
-        }
-
-        .btn-excluir-caixa-resumo:hover {
-            background: #d93025;
-            color: white;
-        }
     </style>
 </head>
 
 <body>
-
     <div class="container">
-        <!-- Navegação de Volta -->
         <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 15px;">
             <a href="./index.html" style="color: #1a73e8; font-weight: bold; text-decoration: none; font-size: 14px;">✍️
                 Volta para Lançamento Manual</a>
@@ -307,20 +303,20 @@
         <input type="text" id="busca-resumo" class="campo-busca" placeholder="🔍 Buscar por destinatário ou CNPJ..."
             oninput="renderizarResumoComAgrupamento()">
 
-        <button class="btn-atualizar" onclick="carregarDadosPlanilha()">🔄 Atualizar e Somar Lotes</button>
+        <button class="btn-atualizar" onclick="carregarDadosPlanilha(true)">🔄 Atualizar e Somar Lotes</button>
         <button class="btn-emitir-todos" onclick="emitirTodosLotes()">🚀 Emitir Todos os Lotes (Abertura
             Simultânea)</button>
 
         <div id="container-resumo-lotes">
-            <div class="status-carregando">Clique em "Atualizar e Somar Lotes" para ler a planilha...</div>
+            <div class="status-carregando">Lendo dados...</div>
         </div>
     </div>
 
     <script>
-        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycby2zfEvuyFxV_nuNrno9jtiBCiRX9eWf8rWBh6hnC08kCVtYR9OjfolDU4SVpCmhbc8/exec";
+        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzp7-DOCnoDL0Xx3t2AC5zfr2yU6eV4c2j115VZt9EE1ecXrup8kkeTLaEAaXGTF7Di/exec";
+        const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_manual_cache_v3";
         const CHAVE_STORAGE_NFES = "shoulders_nfes_cache_v1";
 
-        // 🎯 LISTA DOS CLIENTES CUJO PAGADOR PADRÃO É O REMETENTE (MATRIZ)
         const clientesPagadorRemetente = [
             "ICARAI", "BARRA SHOPPING", "VITORIA", "VILA VELHA", "BATEL", "TIJUCA",
             "CATUAÍ LONDRINA", "CATUAI LONDRINA", "CATUAÍ MARINGA", "CATUAI MARINGA",
@@ -329,47 +325,20 @@
         ];
 
         const mapaCNPJShopping = {
-            "PLAZA CASA FORTE": "43470566006716",
-            "RIO MAR FORTALEZA": "43470566005906",
-            "RIO MAR ARACAJU": "43470566008760",
-            "RIO MAR": "43470566004268",
-            "IGUATEMI FORTALEZA": "43470566003296",
-            "RECIFE": "43470566002729",
-            "BARRA SALVADOR": "43470566004241",
-            "TIJUCA": "43470566006988",
-            "RIO SUL": "43470566010829",
-            "CATUAÍ MARINGA": "43470566012287",
-            "CATUAI MARINGA": "43470566012287",
-            "VITORIA": "43470566008417",
-            "BOULEVARD BELÉM": "43470566009227",
-            "BOULEVARD BELEM": "43470566009227",
-            "MANAUARA": "43470566010586",
-            "ILHA": "43470566010403",
-            "LEBLON": "43470566007100",
-            "SHOPPING DA BAHIA": "43470566010071",
-            "ICARAI": "43470566009065",
-            "MIDWAY": "43470566011043",
-            "VILA VELHA": "43470566010233",
-            "BATEL": "43470566007879",
-            "RIO POTY": "43470566013763",
-            "CATUAÍ LONDRINA": "43470566012368",
-            "CATUAI LONDRINA": "43470566012368",
-            "MACEIO": "43470566008093",
-            "MUELLER": "43470566001919",
-            "SHOPPING GRAO PARÁ": "43470566009146",
-            "SHOPPING GRAO PARA": "43470566009146",
-            "MANAIRA SHOPPING": "43470566008689",
-            "BARRA SHOPPING": "43470566004853",
-            "HAIGHT DIAS": "43470566013330",
-            "HAIGHT VILLAGE MALL": "43470566013925",
-            "RIO DESIGN BARRA": "43470566002214",
-            "HAIGHT LEBLON": "43470566013844",
-            "NATAL": "43470566008506",
-            "HAIGHT RIO DESIGN": "43470566013500",
-            "SALVADOR SHOPPING": "43470566002052",
-            "FABIO MELO": "37208921000176",
-            "MONIZ": "49810965000193",
-            "FORMA PORTO": "56538551000130"
+            "PLAZA CASA FORTE": "43470566006716", "RIO MAR FORTALEZA": "43470566005906", "RIO MAR ARACAJU": "43470566008760",
+            "RIO MAR": "43470566004268", "IGUATEMI FORTALEZA": "43470566003296", "RECIFE": "43470566002729",
+            "BARRA SALVADOR": "43470566004241", "TIJUCA": "43470566006988", "RIO SUL": "43470566010829",
+            "CATUAÍ MARINGA": "43470566012287", "CATUAI MARINGA": "43470566012287", "VITORIA": "43470566008417",
+            "BOULEVARD BELÉM": "43470566009227", "BOULEVARD BELEM": "43470566009227", "MANAUARA": "43470566010586",
+            "ILHA": "43470566010403", "LEBLON": "43470566007100", "SHOPPING DA BAHIA": "43470566010071",
+            "ICARAI": "43470566009065", "MIDWAY": "43470566011043", "VILA VELHA": "43470566010233",
+            "BATEL": "43470566007879", "RIO POTY": "43470566013763", "CATUAÍ LONDRINA": "43470566012368",
+            "CATUAI LONDRINA": "43470566012368", "MACEIO": "43470566008093", "MUELLER": "43470566001919",
+            "SHOPPING GRAO PARÁ": "43470566009146", "SHOPPING GRAO PARA": "43470566009146", "MANAIRA SHOPPING": "43470566008689",
+            "BARRA SHOPPING": "43470566004853", "HAIGHT DIAS": "43470566013330", "HAIGHT VILLAGE MALL": "43470566013925",
+            "RIO DESIGN BARRA": "43470566002214", "HAIGHT LEBLON": "43470566013844", "NATAL": "43470566008506",
+            "HAIGHT RIO DESIGN": "43470566013500", "SALVADOR SHOPPING": "43470566002052", "FABIO MELO": "37208921000176",
+            "MONIZ": "49810965000193", "FORMA PORTO": "56538551000130"
         };
 
         let dadosBrutosGlobal = [];
@@ -378,65 +347,77 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             carregarCacheNFes();
-            carregarDadosPlanilha();
+            carregarDadosPlanilha(false);
         });
 
         function carregarCacheNFes() {
             try {
                 const salvo = localStorage.getItem(CHAVE_STORAGE_NFES);
-                if (salvo) {
-                    mapaNFesClientes = JSON.parse(salvo);
-                }
-            } catch (e) {
-                console.error("Erro ao carregar cache de NFs:", e);
-            }
+                if (salvo) mapaNFesClientes = JSON.parse(salvo);
+            } catch (e) { console.error(e); }
         }
 
         function salvarCacheNFes() {
-            try {
-                localStorage.setItem(CHAVE_STORAGE_NFES, JSON.stringify(mapaNFesClientes));
-            } catch (e) {
-                console.error("Erro ao salvar cache de NFs:", e);
-            }
+            try { localStorage.setItem(CHAVE_STORAGE_NFES, JSON.stringify(mapaNFesClientes)); } catch (e) { console.error(e); }
         }
 
         function obterDataHoje() {
             const hoje = new Date();
-            const d = String(hoje.getDate()).padStart(2, '0');
-            const m = String(hoje.getMonth() + 1).padStart(2, '0');
-            return `${d}/${m}/${hoje.getFullYear()}`;
+            return `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
         }
 
-        function carregarDadosPlanilha() {
+        function carregarDadosPlanilha(forcado = false) {
             const container = document.getElementById('container-resumo-lotes');
-            container.innerHTML = `<div class="status-carregando">⏳ Lendo planilha e agrupando dados...</div>`;
 
-            const callbackName = "cb_resumo_" + Math.round(Math.random() * 1000000);
+            // 1. CARREGAMENTO INSTANTÂNEO DO CACHE LOCAL (0ms)
+            const cacheLocal = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
+            if (cacheLocal) {
+                try {
+                    const arrLocal = JSON.parse(cacheLocal);
+                    if (Array.isArray(arrLocal) && arrLocal.length > 0) {
+                        dadosBrutosGlobal = arrLocal;
+                        renderizarResumoComAgrupamento();
+                    }
+                } catch (e) { console.error("Erro no cache local:", e); }
+            }
 
-            window[callbackName] = function (dados) {
-                delete window[callbackName];
-                const scriptTag = document.getElementById('script-jsonp-resumo');
-                if (scriptTag) scriptTag.remove();
-
-                if (!Array.isArray(dados) || dados.length === 0) {
-                    container.innerHTML = `<div class="status-carregando">Nenhum lote encontrado na planilha.</div>`;
-                    return;
+            // 2. BUSCA ONLINE VIA JSONP (BULA O BLOQUEIO DE CORS)
+            if (forcado || dadosBrutosGlobal.length === 0) {
+                if (dadosBrutosGlobal.length === 0) {
+                    container.innerHTML = `<div class="status-carregando">⏳ Buscando dados da planilha online...</div>`;
                 }
 
-                dadosBrutosGlobal = dados;
-                renderizarResumoComAgrupamento();
-            };
+                const callbackName = "cb_" + Math.floor(Math.random() * 100000);
+                window[callbackName] = function (dados) {
+                    delete window[callbackName];
+                    const scriptOld = document.getElementById('jsonp-script');
+                    if (scriptOld) scriptOld.remove();
 
-            const scriptAntigo = document.getElementById('script-jsonp-resumo');
-            if (scriptAntigo) scriptAntigo.remove();
+                    const listaFinal = Array.isArray(dados) ? dados : (dados && dados.dados ? dados.dados : []);
+                    if (listaFinal.length > 0) {
+                        dadosBrutosGlobal = listaFinal;
+                        localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(dadosBrutosGlobal));
+                        renderizarResumoComAgrupamento();
+                    } else if (dadosBrutosGlobal.length === 0) {
+                        container.innerHTML = `<div class="status-carregando">Nenhum lote cadastrado no momento.</div>`;
+                    }
+                };
 
-            const script = document.createElement('script');
-            script.id = 'script-jsonp-resumo';
-            script.src = `${URL_WEB_APP}?callback=${callbackName}&_v=${new Date().getTime()}`;
-            script.onerror = function () {
-                container.innerHTML = `<div class="status-carregando" style="color:red;">⚠️ Falha ao ler dados da planilha. Verifique a API.</div>`;
-            };
-            document.body.appendChild(script);
+                const scriptOld = document.getElementById('jsonp-script');
+                if (scriptOld) scriptOld.remove();
+
+                const script = document.createElement('script');
+                script.id = 'jsonp-script';
+                script.src = `${URL_WEB_APP}?callback=${callbackName}&_=${Date.now()}`;
+
+                script.onerror = function () {
+                    if (dadosBrutosGlobal.length === 0) {
+                        container.innerHTML = `<div class="status-carregando" style="color: #dc3545;">⚠️ Falha ao conectar com a planilha. Verifique a URL_WEB_APP.</div>`;
+                    }
+                };
+
+                document.body.appendChild(script);
+            }
         }
 
         function renderizarResumoComAgrupamento() {
@@ -444,8 +425,8 @@
             const termoBusca = (document.getElementById('busca-resumo')?.value || "").toLowerCase().trim();
             const dataHoje = obterDataHoje();
 
-            if (dadosBrutosGlobal.length === 0) {
-                container.innerHTML = `<div class="status-carregando">Nenhum registro carregado.</div>`;
+            if (!dadosBrutosGlobal || dadosBrutosGlobal.length === 0) {
+                container.innerHTML = `<div class="status-carregando">Nenhum lote cadastrado no momento.</div>`;
                 return;
             }
 
@@ -467,19 +448,12 @@
                 let pesoVal = parseFloat(String(item.peso).replace(',', '.')) || 0;
                 let qtdVal = parseInt(item.quantidade, 10) || 1;
 
-                if (termoBusca && !clienteNome.toLowerCase().includes(termoBusca) && !cnpjVal.includes(termoBusca) && !dataStr.includes(termoBusca)) {
-                    return;
-                }
+                if (termoBusca && !clienteNome.toLowerCase().includes(termoBusca) && !cnpjVal.includes(termoBusca) && !dataStr.includes(termoBusca)) return;
 
                 if (!agrupadoPorData[dataStr]) agrupadoPorData[dataStr] = {};
                 if (!agrupadoPorData[dataStr][clienteNome]) {
                     agrupadoPorData[dataStr][clienteNome] = {
-                        cliente: clienteNome,
-                        cnpj: cnpjVal,
-                        pallet: palletVal,
-                        medidasMap: {},
-                        totalVol: 0,
-                        totalPeso: 0
+                        cliente: clienteNome, cnpj: cnpjVal, pallet: palletVal, medidasMap: {}, totalVol: 0, totalPeso: 0
                     };
                 }
 
@@ -493,31 +467,23 @@
                 agrupadoPorData[dataStr][clienteNome].totalPeso += pesoVal;
             });
 
-            function converterParaDataObj(dataStr) {
-                if (!dataStr) return new Date(0);
-                const p = dataStr.split('/');
-                if (p.length === 3) {
-                    return new Date(p[2], p[1] - 1, p[0]);
-                }
-                return new Date(0);
-            }
-
             const datasOrdenadas = Object.keys(agrupadoPorData).sort((a, b) => {
-                return converterParaDataObj(b) - converterParaDataObj(a);
+                const pA = a.split('/'), pB = b.split('/');
+                return new Date(pB[2] || 0, (pB[1] || 1) - 1, pB[0] || 1) - new Date(pA[2] || 0, (pA[1] || 1) - 1, pA[0] || 1);
             });
 
             if (datasOrdenadas.length === 0) {
-                container.innerHTML = `<div class="status-carregando">Nenhum registro para os filtros digitados.</div>`;
+                container.innerHTML = `<div class="status-carregando">Nenhum registro encontrado para a busca.</div>`;
                 return;
             }
 
             let html = "";
-
             datasOrdenadas.forEach(dataKey => {
                 const ehHoje = dataKey === dataHoje;
-                if (estadoSanfonaDatas[dataKey] === undefined) {
-                    estadoSanfonaDatas[dataKey] = false;
-                }
+
+                // 🎯 DEFINIDO COMO FALSE PARA VIR FECHADO POR PADRÃO
+                if (estadoSanfonaDatas[dataKey] === undefined) estadoSanfonaDatas[dataKey] = false;
+
                 const estaAberto = estadoSanfonaDatas[dataKey];
 
                 html += `
@@ -537,13 +503,18 @@
                         mapaNFesClientes[cardId] = [{ chave: "", valor: "" }];
                     }
 
-                    // 🎯 VERIFICA SE O CLIENTE DEVE TER O PAGADOR PADRÃO COMO REMETENTE
                     const ehRemetente = clientesPagadorRemetente.includes(cli.cliente);
                     const pagadorPadraoVal = ehRemetente ? "Remetente" : "Destinatario";
 
                     html += `
                         <div class="card-cliente-resumo" id="${cardId}">
-                            <div class="cliente-titulo">🏢 ${cli.cliente}</div>
+                            <div class="header-cliente-card">
+                                <div class="cliente-titulo">🏢 ${cli.cliente}</div>
+                                <button class="btn-excluir-lote-topo" onclick="excluirLoteCompletoCliente('${dataKey}', '${cli.cliente}')">
+                                    🗑️ Excluir Lote
+                                </button>
+                            </div>
+                            
                             <div class="cliente-cnpj">CNPJ: ${cli.cnpj}</div>
 
                             <div class="linha-campo-croamis">
@@ -562,8 +533,8 @@
                                     <option value="9139">9139 (CGH)</option>
                                     <option value="3127">3127 (GRU)</option>
                                     <option value="9033">9033 (GRU)</option>
-                                    <option value="3535 (GRU)">3535 (GRU)</option>
-                                    <option value="3807 (BSB)">3807 (BSB)</option>
+                                    <option value="3535">3535 (GRU)</option>
+                                    <option value="3807">3807 (BSB)</option>
                                 </select>
                             </div>
 
@@ -578,7 +549,6 @@
                                 <div>
                                     <strong>${mData.vol} Vol | ${mData.peso.toFixed(1)} Kg</strong>
                                     <button class="btn-editar-caixa-resumo" onclick="editarCaixaResumo('${dataKey}', '${cli.cliente}', '${med}')">✏️ Editar</button>
-                                    <button class="btn-excluir-caixa-resumo" onclick="excluirLotePlanilha('${dataKey}', '${cli.cliente}', '${med}')">🗑️ Excluir</button>
                                 </div>
                             </div>
                         `;
@@ -602,10 +572,7 @@
                     `;
                 });
 
-                html += `
-                        </div>
-                    </div>
-                `;
+                html += `</div></div>`;
             });
 
             container.innerHTML = html;
@@ -625,20 +592,8 @@
 
                 return `
                     <div class="linha-input-nfe">
-                        <input type="text" 
-                               class="input-chave-nfe" 
-                               placeholder="Chave NF-e (44 dígitos)" 
-                               maxlength="44"
-                               style="${estiloBordaChave}"
-                               value="${nf.chave || ''}" 
-                               oninput="this.value = this.value.replace(/\\D/g, ''); atualizarValorNF('${cardId}', ${idx}, 'chave', this.value)">
-                        
-                        <input type="text" 
-                               class="input-valor-nfe" 
-                               placeholder="Valor (ex: 15000.00)" 
-                               value="${nf.valor || ''}" 
-                               oninput="this.value = tratarInputValor(this.value); atualizarValorNF('${cardId}', ${idx}, 'valor', this.value)">
-                        
+                        <input type="text" class="input-chave-nfe" placeholder="Chave NF-e (44 dígitos)" maxlength="44" style="${estiloBordaChave}" value="${nf.chave || ''}" oninput="this.value = this.value.replace(/\\D/g, ''); atualizarValorNF('${cardId}', ${idx}, 'chave', this.value)">
+                        <input type="text" class="input-valor-nfe" placeholder="Valor (ex: 15000.00)" value="${nf.valor || ''}" oninput="this.value = tratarInputValor(this.value); atualizarValorNF('${cardId}', ${idx}, 'valor', this.value)">
                         ${nfes.length > 1 ? `<button class="btn-remove-nf" onclick="removerLinhaNF('${cardId}', ${idx})">✕</button>` : ''}
                     </div>
                 `;
@@ -646,9 +601,7 @@
         }
 
         function atualizarValorNF(cardId, index, campo, valor) {
-            if (!mapaNFesClientes[cardId]) {
-                mapaNFesClientes[cardId] = [{ chave: "", valor: "" }];
-            }
+            if (!mapaNFesClientes[cardId]) mapaNFesClientes[cardId] = [{ chave: "", valor: "" }];
             if (mapaNFesClientes[cardId][index]) {
                 mapaNFesClientes[cardId][index][campo] = valor;
                 salvarCacheNFes();
@@ -671,12 +624,9 @@
         }
 
         function tratarInputValor(texto) {
-            let limpo = texto.replace(/,/g, '');
-            limpo = limpo.replace(/[^0-9.]/g, '');
+            let limpo = texto.replace(/,/g, '').replace(/[^0-9.]/g, '');
             const partes = limpo.split('.');
-            if (partes.length > 2) {
-                limpo = partes[0] + '.' + partes.slice(1).join('');
-            }
+            if (partes.length > 2) limpo = partes[0] + '.' + partes.slice(1).join('');
             return limpo;
         }
 
@@ -700,7 +650,37 @@
                 }
             });
 
+            localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(dadosBrutosGlobal));
             renderizarResumoComAgrupamento();
+        }
+
+        async function excluirLoteCompletoCliente(dataStr, clienteNome) {
+            if (!confirm(`⚠️ Confirmar EXCLUSÃO do lote completo do cliente "${clienteNome}" na data ${dataStr}?`)) return;
+
+            dadosBrutosGlobal = dadosBrutosGlobal.filter(item => {
+                let d = item.data ? String(item.data).trim() : "";
+                if (d.includes("T")) d = d.split("T")[0];
+                if (d.includes("-") && d.length >= 10) {
+                    const p = d.substring(0, 10).split("-");
+                    d = `${p[2]}/${p[1]}/${p[0]}`;
+                }
+                const cli = (item.destinatario || item.nome || "").toUpperCase().trim();
+                return !(cli === clienteNome.toUpperCase().trim() && (d === dataStr || !d));
+            });
+
+            localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(dadosBrutosGlobal));
+            renderizarResumoComAgrupamento();
+
+            try {
+                fetch(URL_WEB_APP, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ acao: "EXCLUIR_LOTE_CLIENTE", destinatario: clienteNome, data: dataStr })
+                });
+            } catch (erro) {
+                console.error("Erro na comunicação de exclusão com o servidor:", erro);
+            }
         }
 
         function emitirCroamisPeloCard(cardId, cliente, cnpj, totalVol, totalPeso) {
@@ -710,7 +690,7 @@
 
             const nfInvalida = nfes.find(n => n.chave && n.chave.trim() !== "" && n.chave.trim().length !== 44);
             if (nfInvalida) {
-                alert(`⚠️ A chave de NF-e "${nfInvalida.chave}" está incompleta!\nEla deve conter exatamente 44 dígitos.`);
+                alert(`⚠️ A chave de NF-e "${nfInvalida.chave}" está incompleta! Devem ser 44 dígitos.`);
                 return;
             }
 
@@ -743,13 +723,7 @@
                         }
                     }
 
-                    caixasDoCard.push({
-                        qtd: qtd,
-                        peso: peso,
-                        comp: comp,
-                        larg: larg,
-                        alt: alt
-                    });
+                    caixasDoCard.push({ qtd, peso, comp, larg, alt });
                 });
             }
 
@@ -761,22 +735,14 @@
                 vooOpcao: voo,
                 pesoBrutoTotal: totalPeso,
                 qtdPecasTotal: totalVol,
-                caixas: caixasDoCard.length > 0 ? caixasDoCard : [
-                    { qtd: totalVol, peso: totalPeso, comp: 60, larg: 39, alt: 33 }
-                ],
+                caixas: caixasDoCard.length > 0 ? caixasDoCard : [{ qtd: totalVol, peso: totalPeso, comp: 60, larg: 39, alt: 33 }],
                 listaNfes: listaNfesFormatada,
                 chaveNfe: listaNfesFormatada.length > 0 ? listaNfesFormatada[0].chaveNfe : "",
                 valorTotalProduto: listaNfesFormatada.length > 0 ? listaNfesFormatada[0].valorTotalProduto : "0.00"
             };
 
-            console.log("✈️ Disparando para Extensão do CROAMIS:", payload);
-
-            window.postMessage({
-                tipo: "PREENCHER_CROAMIS",
-                payload: payload
-            }, "*");
-
-            alert(`🚀 Comando de emissão enviado para ${cliente}!\n\n• Pagador: ${pagador}\n• Voo: ${voo}\n• NFs Válidas: ${listaNfesFormatada.length}\n• Total: ${totalVol} Vol | ${totalPeso} Kg`);
+            window.postMessage({ tipo: "PREENCHER_CROAMIS", payload }, "*");
+            alert(`🚀 Comando de emissão enviado para ${cliente}!`);
         }
 
         function emitirTodosLotes() {
@@ -784,57 +750,12 @@
                 alert("⚠️ Nenhum lote carregado para emitir!");
                 return;
             }
-            if (!confirm("🚀 Confirma a emissão simultânea de todos os lotes visualizados na tela?")) return;
+            if (!confirm("🚀 Confirma a emissão simultânea de todos os lotes visualizados?")) return;
 
             const botoesEmitir = document.querySelectorAll('.btn-emitir-latam');
             botoesEmitir.forEach((btn, idx) => {
-                setTimeout(() => {
-                    btn.click();
-                }, idx * 2500);
+                setTimeout(() => { btn.click(); }, idx * 2500);
             });
-        }
-
-        async function excluirLotePlanilha(dataStr, clienteNome, medida) {
-            const confirmacao = confirm(`⚠️ Tem certeza que deseja EXCLUIR permanentemente o lote da caixa "${medida}" do cliente ${clienteNome} da planilha?`);
-            if (!confirmacao) return;
-
-            const statusDiv = document.createElement('div');
-            statusDiv.style.cssText = "position: fixed; top: 20px; right: 20px; background: #d93025; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 9999;";
-            statusDiv.innerText = "⏳ Apagando da planilha...";
-            document.body.appendChild(statusDiv);
-
-            try {
-                const payload = JSON.stringify({
-                    acao: "EXCLUIR",
-                    destinatario: clienteNome,
-                    medida: medida
-                });
-
-                await fetch(URL_WEB_APP, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: payload
-                });
-
-                statusDiv.innerText = "✅ Lote excluído da planilha!";
-
-                dadosBrutosGlobal = dadosBrutosGlobal.filter(item => {
-                    const c = (item.destinatario || item.nome || "").toUpperCase().trim();
-                    const m = (item.medida || "PADRÃO").toUpperCase().trim();
-                    return !(c === clienteNome.toUpperCase().trim() && m === medida.toUpperCase().trim());
-                });
-
-                setTimeout(() => {
-                    statusDiv.remove();
-                    renderizarResumoComAgrupamento();
-                }, 1200);
-
-            } catch (erro) {
-                console.error("Erro ao excluir lote:", erro);
-                alert("⚠️ Falha ao tentar excluir o lote na planilha.");
-                statusDiv.remove();
-            }
         }
     </script>
 </body>

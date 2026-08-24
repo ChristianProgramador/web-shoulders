@@ -7,6 +7,8 @@
     <title>Shoulders - Entrada Manual</title>
     <link rel="stylesheet" href="./src/css/style.css">
     <link rel="stylesheet" href="./src/css/responsive.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,6 +25,44 @@
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: max-width 0.3s ease;
+        }
+
+        /* 💻 ESTRUTURA LADO A LADO PARA DESKTOP */
+        .painel-split {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .coluna-esquerda,
+        .coluna-direita {
+            width: 100%;
+        }
+
+        @media (min-width: 900px) {
+            .container {
+                max-width: 1250px;
+                /* Expande o painel para caber os dois lados */
+            }
+
+            .painel-split {
+                flex-direction: row;
+                /* Coloca Lado a Lado */
+                align-items: flex-start;
+            }
+
+            .coluna-esquerda {
+                flex: 1;
+                position: sticky;
+                top: 20px;
+                /* Mantém o formulário fixo ao rolar a página */
+            }
+
+            .coluna-direita {
+                flex: 1;
+            }
         }
 
         h1 {
@@ -132,7 +172,7 @@
         }
 
         .secao-lotes-salvos {
-            margin-top: 25px;
+            margin-top: 0;
             text-align: left;
         }
 
@@ -341,34 +381,62 @@
             display: none;
         }
 
+        /* ===========================================================
+   🎯 REGRAS EXCLUSIVAS DE IMPRESSÃO (PDF LIMPO E FORMATADO)
+   =========================================================== */
         @media print {
 
-            .form-manual,
-            .link-resumo,
+            /* Esconde o formulário da esquerda, botões de ação e navegação */
+            .form-section,
+            .btn-emitir-todos,
+            .btn-atualizar,
+            .campo-busca,
+            .btn-editar-caixa-resumo,
+            .btn-excluir-caixa-resumo,
+            button,
             a,
-            .campo-busca-lotes,
-            .btn-add-caixa-card,
-            .btn-excluir-lote-card,
-            .btn-editar-linha,
-            .btn-remover-linha,
-            .select-mover-pallet {
+            header,
+            nav {
                 display: none !important;
             }
 
-            body {
-                background-color: #ffffff !important;
-                padding: 0 !important;
-            }
-
-            .container {
-                box-shadow: none !important;
+            /* Expande a área de impressão para 100% da largura da página */
+            body,
+            .container,
+            .main-content,
+            .lista-section {
+                width: 100% !important;
                 max-width: 100% !important;
+                margin: 0 !important;
                 padding: 0 !important;
+                background: #ffffff !important;
+                box-shadow: none !important;
             }
 
-            .card-pallet-container {
-                page-break-inside: avoid;
-                border: 1px solid #000 !important;
+            /* Formatação dos cards de clientes para o papel */
+            .card-cliente-resumo,
+            .card-pallet {
+                border: 1px solid #333 !important;
+                page-break-inside: avoid !important;
+                /* Evita cortar o card no meio de duas páginas */
+                margin-bottom: 12px !important;
+                padding: 10px !important;
+            }
+
+            /* Ajuste de tabelas e selectboxes para aparecerem limpos sem setas */
+            select {
+                border: none !important;
+                background: transparent !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                font-weight: bold;
+            }
+
+            /* Garante legibilidade do texto e remove sombras pretas */
+            * {
+                color: #000 !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
             }
         }
     </style>
@@ -393,132 +461,143 @@
 
         <div id="box-status-sinc" class="status-sincronizacao"></div>
 
-        <div class="form-manual">
+        <!-- 🚀 ESTRUTURA DIVIDIDA LADO A LADO -->
+        <div class="painel-split">
 
-            <div class="form-grupo">
-                <label>🏢 Destinatário / Cliente:</label>
-                <div class="linha-selecao-custom">
-                    <input type="text" id="manual-cliente-input" list="lista-clientes"
-                        placeholder="🔍 Digite para buscar cliente ou CNPJ..."
-                        oninput="validarSelecaoCliente(this.value)">
-                    <datalist id="lista-clientes">
-                        <option value="BARRA SHOPPING - 43470566004853">
-                        <option value="BATEL - 43470566007879">
-                        <option value="BOULEVARD BELÉM - 43470566009227">
-                        <option value="CATUAÍ LONDRINA - 43470566012368">
-                        <option value="CATUAÍ MARINGA - 43470566012287">
-                        <option value="FABIO MELO - 37208921000176">
-                        <option value="FORMA PORTO - 56538551000130">
-                        <option value="HAIGHT DIAS - 43470566013320">
-                        <option value="HAIGHT LEBLON - 43470566013844">
-                        <option value="HAIGHT RIO DESIGN - 43470566013500">
-                        <option value="HAIGHT VILLAGE MALL - 43470566013925">
-                        <option value="ICARAI - 43470566009065">
-                        <option value="IGUATEMI FORTALEZA - 43470566003296">
-                        <option value="ILHA - 43470566010403">
-                        <option value="LEBLON - 43470566007100">
-                        <option value="MACEIO - 43470566008093">
-                        <option value="MANAIRA SHOPPING - 43470566008689">
-                        <option value="MANAUARA - 43470566010586">
-                        <option value="MIDWAY - 43470566011043">
-                        <option value="MONIZ - 49810965000193">
-                        <option value="NATAL - 43470566008506">
-                        <option value="RECIFE - 43470566002729">
-                        <option value="RIO DESIGN BARRA - 43470566002214">
-                        <option value="RIO MAR - 43470566004268">
-                        <option value="RIO MAR ARACAJU - 43470566008760">
-                        <option value="RIO MAR FORTALEZA - 43470566005906">
-                        <option value="RIO POTY - 43470566013763">
-                        <option value="RIO SUL - 43470566010829">
-                        <option value="SALVADOR SHOPPING - 43470566002052">
-                        <option value="SHOPPING DA BAHIA - 43470566010071">
-                        <option value="SHOPPING GRAO PARÁ - 43470566009146">
-                        <option value="TIJUCA - 43470566006988">
-                        <option value="VILA VELHA - 43470566010233">
-                        <option value="VITORIA - 43470566008417">
-                    </datalist>
+            <!-- 📝 COLUNA ESQUERDA: FORMULÁRIO -->
+            <div class="coluna-esquerda">
+                <div class="form-manual">
+
+                    <div class="form-grupo">
+                        <label>🏢 Destinatário / Cliente:</label>
+                        <div class="linha-selecao-custom">
+                            <input type="text" id="manual-cliente-input" list="lista-clientes"
+                                placeholder="🔍 Digite para buscar cliente ou CNPJ..."
+                                oninput="validarSelecaoCliente(this.value)">
+                            <datalist id="lista-clientes">
+                                <option value="BARRA SHOPPING - 43470566004853">
+                                <option value="BATEL - 43470566007879">
+                                <option value="BOULEVARD BELÉM - 43470566009227">
+                                <option value="CATUAÍ LONDRINA - 43470566012368">
+                                <option value="CATUAÍ MARINGA - 43470566012287">
+                                <option value="FABIO MELO - 37208921000176">
+                                <option value="FORMA PORTO - 56538551000130">
+                                <option value="HAIGHT DIAS - 43470566013320">
+                                <option value="HAIGHT LEBLON - 43470566013844">
+                                <option value="HAIGHT RIO DESIGN - 43470566013500">
+                                <option value="HAIGHT VILLAGE MALL - 43470566013925">
+                                <option value="ICARAI - 43470566009065">
+                                <option value="IGUATEMI FORTALEZA - 43470566003296">
+                                <option value="ILHA - 43470566010403">
+                                <option value="LEBLON - 43470566007100">
+                                <option value="MACEIO - 43470566008093">
+                                <option value="MANAIRA SHOPPING - 43470566008689">
+                                <option value="MANAUARA - 43470566010586">
+                                <option value="MIDWAY - 43470566011043">
+                                <option value="MONIZ - 49810965000193">
+                                <option value="NATAL - 43470566008506">
+                                <option value="RECIFE - 43470566002729">
+                                <option value="RIO DESIGN BARRA - 43470566002214">
+                                <option value="RIO MAR - 43470566004268">
+                                <option value="RIO MAR ARACAJU - 43470566008760">
+                                <option value="RIO MAR FORTALEZA - 43470566005906">
+                                <option value="RIO POTY - 43470566013763">
+                                <option value="RIO SUL - 43470566010829">
+                                <option value="SALVADOR SHOPPING - 43470566002052">
+                                <option value="SHOPPING DA BAHIA - 43470566010071">
+                                <option value="SHOPPING GRAO PARÁ - 43470566009146">
+                                <option value="TIJUCA - 43470566006988">
+                                <option value="VILA VELHA - 43470566010233">
+                                <option value="VITORIA - 43470566008417">
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="form-grupo">
+                        <label>📍 Localização / Palete:</label>
+                        <div class="linha-selecao-custom">
+                            <select id="manual-pallet" onchange="verificarPalletCustomizado(this)">
+                                <option value="Pallet 1">Pallet 1</option>
+                                <option value="Pallet 2">Pallet 2</option>
+                                <option value="Pallet 3">Pallet 3</option>
+                                <option value="Pallet 4">Pallet 4</option>
+                                <option value="Pallet 5">Pallet 5</option>
+                                <option value="Pallet 6">Pallet 6</option>
+                                <option value="Pallet 7">Pallet 7</option>
+                                <option value="Pallet 8">Pallet 8</option>
+                                <option value="Pallet 9">Pallet 9</option>
+                                <option value="Pallet 10">Pallet 10</option>
+                                <option value="CUSTOM">➕ Outra localização...</option>
+                            </select>
+                        </div>
+                        <input type="text" id="manual-pallet-custom" placeholder="Digite a localização (ex: Pallet 16)"
+                            style="display: none; margin-top: 8px;">
+                    </div>
+
+                    <div class="form-grupo">
+                        <label>📦 Tipo de Caixa / Medida:</label>
+                        <div class="linha-selecao-custom">
+                            <select id="manual-medida" onchange="verificarMedidaCustomizada(this)">
+                                <option value="PADRÃO">PADRÃO (60x39x33)</option>
+                                <option value="60X39X23">60x39x23</option>
+                                <option value="60X39X10">60x39x10</option>
+                                <option value="66x60x10">66x60x10</option>
+                                <option value="39x33x23">39x33x23</option>
+                                <option value="39x33x10">39x33x10</option>
+                                <option value="CUSTOM">➕ Outra medida...</option>
+                            </select>
+                        </div>
+                        <input type="text" id="manual-medida-custom" placeholder="Digite a medida exata (ex: 70x50x40)"
+                            style="display: none; margin-top: 8px;">
+                    </div>
+
+                    <div class="form-grupo">
+                        <label>🔢 Quantidade de Volumes:</label>
+                        <input type="number" id="manual-qtd" value="1" min="1">
+                    </div>
+
+                    <div class="form-grupo">
+                        <label>⚖️ Peso Total da Caixa/Item (Kg):</label>
+                        <input type="number" id="manual-peso" step="0.1" placeholder="Ex: 15.0">
+                    </div>
+
+                    <button type="button" class="btn-add-caixa" id="btn-add-caixa"
+                        onclick="adicionarCaixaAoLoteVisivel()">📦 ➕ Adicionar Caixa ao Lote</button>
+                    <button class="btn-salvar-manual" id="btn-salvar-manual" onclick="confirmarESalvarLotes()">💾
+                        Sincronizar / Salvar Lotes</button>
+                    <button type="button" class="btn-backup-local" style="background: #e37400; color: white;"
+                        onclick="gerarPDFRelatorio()">📄 Imprimir / Salvar PDF do Lote</button>
                 </div>
             </div>
 
-            <div class="form-grupo">
-                <label>📍 Localização / Palete:</label>
-                <div class="linha-selecao-custom">
-                    <select id="manual-pallet" onchange="verificarPalletCustomizado(this)">
-                        <option value="Pallet 1">Pallet 1</option>
-                        <option value="Pallet 2">Pallet 2</option>
-                        <option value="Pallet 3">Pallet 3</option>
-                        <option value="Pallet 4">Pallet 4</option>
-                        <option value="Pallet 5">Pallet 5</option>
-                        <option value="Pallet 6">Pallet 6</option>
-                        <option value="Pallet 7">Pallet 7</option>
-                        <option value="Pallet 8">Pallet 8</option>
-                        <option value="Pallet 9">Pallet 9</option>
-                        <option value="Pallet 10">Pallet 10</option>
-                        <option value="CUSTOM">➕ Outra localização...</option>
-                    </select>
-                </div>
-                <input type="text" id="manual-pallet-custom" placeholder="Digite a localização (ex: Pallet 16)"
-                    style="display: none; margin-top: 8px;">
-            </div>
+            <!-- 🔍 COLUNA DIREITA: RESUMO, BUSCA E LISTA DE LOTES -->
+            <div class="coluna-direita">
+                <div class="secao-lotes-salvos">
 
-            <div class="form-grupo">
-                <label>📦 Tipo de Caixa / Medida:</label>
-                <div class="linha-selecao-custom">
-                    <select id="manual-medida" onchange="verificarMedidaCustomizada(this)">
-                        <option value="PADRÃO">PADRÃO (60x39x33)</option>
-                        <option value="60X39X23">60x39x23</option>
-                        <option value="60X39X10">60x39x10</option>
-                        <option value="66x60x10">66x60x10</option>
-                        <option value="39x33x23">39x33x23</option>
-                        <option value="39x33x10">39x33x10</option>
-                        <option value="CUSTOM">➕ Outra medida...</option>
-                    </select>
-                </div>
-                <input type="text" id="manual-medida-custom" placeholder="Digite a medida exata (ex: 70x50x40)"
-                    style="display: none; margin-top: 8px;">
-            </div>
+                    <div class="banner-metricas-dia">
+                        <div class="item-metrica">
+                            <span class="metrica-titulo">🏢 Clientes Criados</span>
+                            <span class="metrica-valor" id="count-clientes-unicos">0</span>
+                        </div>
+                        <div class="item-metrica" style="text-align: right;">
+                            <span class="metrica-titulo">⚖️ Peso Total do Dia</span>
+                            <span class="metrica-valor" id="soma-peso-total-dia">0.0 kg</span>
+                        </div>
+                    </div>
 
-            <div class="form-grupo">
-                <label>🔢 Quantidade de Volumes:</label>
-                <input type="number" id="manual-qtd" value="1" min="1">
-            </div>
-
-            <div class="form-grupo">
-                <label>⚖️ Peso Total da Caixa/Item (Kg):</label>
-                <input type="number" id="manual-peso" step="0.1" placeholder="Ex: 15.0">
-            </div>
-
-            <button type="button" class="btn-add-caixa" id="btn-add-caixa" onclick="adicionarCaixaAoLoteVisivel()">📦 ➕
-                Adicionar Caixa ao Lote</button>
-            <button class="btn-salvar-manual" id="btn-salvar-manual" onclick="confirmarESalvarLotes()">💾 Sincronizar /
-                Salvar Lotes</button>
-            <button type="button" class="btn-backup-local" style="background: #e37400; color: white;"
-                onclick="gerarPDFRelatorio()">📄 Imprimir / Salvar PDF do Lote</button>
-        </div>
-
-        <div class="secao-lotes-salvos">
-
-            <div class="banner-metricas-dia">
-                <div class="item-metrica">
-                    <span class="metrica-titulo">🏢 Clientes Criados</span>
-                    <span class="metrica-valor" id="count-clientes-unicos">0</span>
-                </div>
-                <div class="item-metrica" style="text-align: right;">
-                    <span class="metrica-titulo">⚖️ Peso Total do Dia</span>
-                    <span class="metrica-valor" id="soma-peso-total-dia">0.0 kg</span>
+                    <input type="text" id="busca-lotes" class="campo-busca-lotes"
+                        placeholder="🔍 Pesquisar por Cliente, CNPJ ou Pallet..." oninput="renderizarListaDeLotes()">
+                    <div id="container-lista-lotes"></div>
                 </div>
             </div>
 
-            <input type="text" id="busca-lotes" class="campo-busca-lotes"
-                placeholder="🔍 Pesquisar por Cliente, CNPJ ou Pallet..." oninput="renderizarListaDeLotes()">
-            <div id="container-lista-lotes"></div>
-        </div>
+        </div> <!-- FIM DA PAINEL-SPLIT -->
 
     </div>
 
     <script>
-        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycby2zfEvuyFxV_nuNrno9jtiBCiRX9eWf8rWBh6hnC08kCVtYR9OjfolDU4SVpCmhbc8/exec";
-        const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_manual_cache_v3";
+        const URL_WEB_APP ="https://script.google.com/macros/s/AKfycbzp7-DOCnoDL0Xx3t2AC5zfr2yU6eV4c2j115VZt9EE1ecXrup8kkeTLaEAaXGTF7Di/exec";
+        const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_rascunho_sessao_atual";
 
         const mapaCNPJShopping = {
             "PLAZA CASA FORTE": "43470566006716",
@@ -590,9 +669,12 @@
                 const salvo = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
                 if (salvo) {
                     lotesSessaoAtual = JSON.parse(salvo);
+                } else {
+                    lotesSessaoAtual = [];
                 }
             } catch (e) {
                 console.error("Erro ao carregar rascunho local:", e);
+                lotesSessaoAtual = [];
             }
             renderizarListaDeLotes();
         }
@@ -618,7 +700,7 @@
             const clienteExiste = lotesSessaoAtual.some(item => (item.destinatario || "").toUpperCase() === clienteNome);
 
             if (clienteExiste) {
-                alert(`⚠️ O destinatário "${clienteNome}" já possui um lote criado abaixo!\n\nPara incluir mais caixas a este cliente, use o botão "➕ Add Caixa" dentro do card dele.`);
+                alert(`⚠️ O destinatário "${clienteNome}" já possui um lote criado!\n\nPara incluir mais caixas a este cliente, use o botão "➕ Add Caixa" dentro do card dele na coluna ao lado.`);
                 document.getElementById('manual-cliente-input').value = "";
             }
         }
@@ -699,7 +781,6 @@
             salvarCacheLocal();
         }
 
-        // 🎯 FUNÇÃO PARA ALTERAR A MEDIDA DIRETAMENTE NA TABELA
         function alterarMedidaDireta(indexOriginal, novaMedida) {
             if (lotesSessaoAtual[indexOriginal]) {
                 lotesSessaoAtual[indexOriginal].medida = novaMedida;
@@ -712,7 +793,6 @@
             const tagClientesUnicos = document.getElementById('count-clientes-unicos');
             const tagSomaPesoDia = document.getElementById('soma-peso-total-dia');
 
-            // 🎯 CÁLCULO DE CLIENTES ÚNICOS E PESO TOTAL DO DIA EM TEMPO REAL
             const conjuntoClientes = new Set();
             let pesoTotalGeral = 0;
 
@@ -880,54 +960,66 @@
         }
 
         async function confirmarESalvarLotes() {
-            if (lotesSessaoAtual.length === 0) { alert("⚠️ Nenhum lote para salvar!"); return; }
+            if (typeof lotesSessaoAtual === 'undefined' || lotesSessaoAtual.length === 0) {
+                alert("⚠️ Nenhum lote para salvar!");
+                return;
+            }
 
-            const confimacaoConferencia = confirm(`❓ Deseja sincronizar ${lotesSessaoAtual.length} caixa(s) com a planilha Google?`);
-            if (!confimacaoConferencia) return;
+            const total = lotesSessaoAtual.length;
+            if (!confirm(`❓ Deseja sincronizar todos os ${total} lotes com a planilha Google?`)) return;
 
             const btn = document.getElementById('btn-salvar-manual');
             const boxStatus = document.getElementById('box-status-sinc');
 
-            btn.disabled = true;
-            boxStatus.style.display = 'block';
-            boxStatus.style.background = '#e8f0fe';
-            boxStatus.style.color = '#1a73e8';
-
-            const total = lotesSessaoAtual.length;
-            let enviadasComSucesso = [];
-
-            for (let i = 0; i < total; i++) {
-                const item = lotesSessaoAtual[i];
-                boxStatus.innerText = `⏳ Gravando caixa ${i + 1} de ${total} (${item.destinatario} - ${item.peso}Kg)...`;
-
-                try {
-                    await fetch(URL_WEB_APP, {
-                        method: "POST",
-                        mode: "no-cors",
-                        headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify(item)
-                    });
-
-                    enviadasComSucesso.push(item.id);
-                    await new Promise(resolve => setTimeout(resolve, 350));
-
-                } catch (err) {
-                    console.error("Erro ao enviar item:", item, err);
-                }
+            if (btn) btn.disabled = true;
+            if (boxStatus) {
+                boxStatus.style.display = 'block';
+                boxStatus.style.background = '#e8f0fe';
+                boxStatus.style.color = '#1a73e8';
+                boxStatus.innerText = `⏳ Gravando ${total} lote(s) na planilha...`;
             }
 
-            lotesSessaoAtual = lotesSessaoAtual.filter(item => !enviadasComSucesso.includes(item.id));
-            salvarCacheLocal();
+            try {
+                // Envia requisição sem travar por CORS
+                fetch(URL_WEB_APP, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ acao: "SALVAR_LOTE_COMPLETO", pacotes: lotesSessaoAtual })
+                });
 
-            btn.disabled = false;
-            boxStatus.style.background = '#d4edda';
-            boxStatus.style.color = '#155724';
-            boxStatus.innerText = `✅ Sincronização concluída (${enviadasComSucesso.length} caixas salvas na planilha)!`;
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-            setTimeout(() => { boxStatus.style.display = 'none'; }, 3000);
+                // 🎯 ZERA O ARRAY E REMOVE A CHAVE EXCLUSIVA DA SESSÃO
+                lotesSessaoAtual = [];
+                localStorage.removeItem("shoulders_rascunho_sessao_atual");
+                localStorage.removeItem("shoulders_lotes_rascunho");
 
-            if (confirm("Deseja ir para a tela de Resumo das Notas para realizar a emissão consolidada agora?")) {
-                window.location.href = "./resumo.html";
+                // Limpa a tela do lançamento manual
+                renderizarListaDeLotes();
+
+                if (btn) btn.disabled = false;
+                if (boxStatus) {
+                    boxStatus.style.background = '#d4edda';
+                    boxStatus.style.color = '#155724';
+                    boxStatus.innerText = `✅ Sincronização concluída! Lotes enviados para a planilha.`;
+                }
+
+                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 1500);
+
+                if (confirm("Deseja abrir o Resumo das Notas para emitir agora?")) {
+                    window.location.href = "./resumo.html";
+                }
+
+            } catch (err) {
+                // ... restante do seu catch
+                console.error("Erro ao sincronizar:", err);
+                if (btn) btn.disabled = false;
+                if (boxStatus) {
+                    boxStatus.style.background = '#f8d7da';
+                    boxStatus.style.color = '#721c24';
+                    boxStatus.innerText = "⚠️ Erro ao sincronizar. Tente novamente.";
+                }
             }
         }
 

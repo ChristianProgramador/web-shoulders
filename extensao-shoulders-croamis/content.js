@@ -104,15 +104,18 @@ const MAPA_IE_DESTINATARIOS_PAGANTES = {
 };
 
 const MAPA_CADASTRO_MANUAL = {
-  // --- EXCEÇÃO: DESTINATÁRIO PAGANTE COM ENDEREÇO MANUAL ---
+  // 🎯 EXCEÇÃO CADASTRAL EXCLUSIVA: MANAIRA SHOPPING
   "43470566008689": {
     nome: "MANAIRA SHOPPING",
-    cep: "58038000",
+    nomeCliente: "SHOULDER INDUS COMERCIO CONFECCOES LTDA",
+    cep: "58102835",
     ie: "163868786",
+    cnae: "4781400",
+    endereco: "AV GOVERNADOR FLAVIO RIBEIRO COUTINHO",
     numero: "220",
+    neighbourhood: "PARQUE VERDE",
     cidade: "JOAO PESSOA",
     estado: "PB",
-    endereco: "AV GOVERNADOR FLAVIO RIBEIRO COUTINHO",
     produto: "ST3BA"
   },
 
@@ -187,14 +190,17 @@ async function preencherCadastroManual(escopo, cnpjAlvo) {
     await esperar(1200);
   }
 
+  // NOME DO CLIENTE
   const campoNome = escopo.querySelector('#customerName, input[id*="customerName" i]');
   if (campoNome) {
     campoNome.removeAttribute('readonly');
     campoNome.focus();
-    atribuirValorInput(campoNome, "SHOULDER S.A.");
+    const nomeFinal = dados.nomeCliente || "SHOULDER S.A.";
+    atribuirValorInput(campoNome, nomeFinal);
     campoNome.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
+  // CEP
   const campoCEP = escopo.querySelector('#zipCode, input[id*="zip" i]');
   if (campoCEP) {
     campoCEP.removeAttribute('readonly');
@@ -209,6 +215,7 @@ async function preencherCadastroManual(escopo, cnpjAlvo) {
     await esperar(500);
   }
 
+  // INSCRIÇÃO ESTADUAL
   const campoIE = escopo.querySelector('#stateRegistration, input[id*="stateRegistration" i]') ||
     document.getElementById('stateRegistration');
 
@@ -228,15 +235,17 @@ async function preencherCadastroManual(escopo, cnpjAlvo) {
     campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
+  // CNAE
   const campoCNAE = escopo.querySelector('#cnaeCode, input[id*="cnae" i]');
   if (campoCNAE) {
     campoCNAE.removeAttribute('readonly');
     campoCNAE.focus();
-    atribuirValorInput(campoCNAE, "4930202");
+    const cnaeFinal = dados.cnae || "4930202";
+    atribuirValorInput(campoCNAE, cnaeFinal);
     campoCNAE.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  // CORREÇÃO AQUI: Só preenche o endereço se explicitamente fornecido no objeto
+  // ENDEREÇO
   if (dados.endereco) {
     const campoEndereco = escopo.querySelector('#address, input[id*="address" i]');
     if (campoEndereco) {
@@ -247,6 +256,7 @@ async function preencherCadastroManual(escopo, cnpjAlvo) {
     }
   }
 
+  // CIDADE E ESTADO
   if (dados.cidade) {
     const campoCidade = escopo.querySelector('#cityName, input[id*="city" i]');
     if (campoCidade) atribuirValorInput(campoCidade, dados.cidade);
@@ -257,6 +267,7 @@ async function preencherCadastroManual(escopo, cnpjAlvo) {
     if (campoEstado) atribuirValorInput(campoEstado, dados.estado);
   }
 
+  // NÚMERO
   const campoNumero = escopo.querySelector('#streetNum, #buildingNumber, input[id*="streetNum" i], input[id*="buildingNumber" i]') ||
     document.getElementById('streetNum');
 
@@ -271,8 +282,19 @@ async function preencherCadastroManual(escopo, cnpjAlvo) {
     campoNumero.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
+  // NEIGHBOURHOOD / BAIRRO
+  if (dados.neighbourhood) {
+    const campoBairro = escopo.querySelector('#neighbourhood, input[id*="neighbourhood" i]');
+    if (campoBairro) {
+      campoBairro.removeAttribute('readonly');
+      campoBairro.focus();
+      atribuirValorInput(campoBairro, dados.neighbourhood);
+      campoBairro.dispatchEvent(new Event('blur', { bubbles: true }));
+    }
+  }
+
   await esperar(800);
-  console.log(`✅ [Cadastro Manual] ${dados.nome} preenchido com IE ${dados.ie}!`);
+  console.log(`✅ [Cadastro Manual Exceção] ${dados.nome} preenchido com IE ${dados.ie} e CEP ${dados.cep}!`);
   return true;
 }
 
