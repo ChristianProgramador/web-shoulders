@@ -30,8 +30,6 @@ if (window.location.href.includes("croamis.latamcargo.com")) {
 // ===========================================================
 // 2. FUNÇÕES AUXILIARES DE SUPORTE (COM WEB WORKER ANTI-TRAVAMENTO)
 // ===========================================================
-
-// Worker embutido via Blob para impedir que o Edge atrase os timers em abas de fundo
 const workerTimerCode = `
   self.onmessage = function(e) {
     setTimeout(function() {
@@ -52,7 +50,6 @@ function esperar(ms) {
       };
       worker.postMessage({ ms: ms });
     } catch (e) {
-      // Fallback em caso de bloqueio estrito de CSP
       setTimeout(resolve, ms);
     }
   });
@@ -60,31 +57,18 @@ function esperar(ms) {
 
 function atribuirValorInput(inputElement, valor) {
   if (!inputElement) return;
-  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-  nativeSetter.call(inputElement, valor);
-  inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-  inputElement.dispatchEvent(new Event('change', { bubbles: true }));
-}
 
-async function fecharAlertasModal() {
-  const botoesModal = Array.from(document.querySelectorAll('button, input[type="button"], a, .ui-dialog-buttonpane button'));
-
-  for (let btn of botoesModal) {
-    const texto = (btn.value || btn.innerText || '').trim().toLowerCase();
-    if (texto === 'fechar' || texto === 'close' || texto === 'ok') {
-      if (btn.offsetWidth > 0 && btn.offsetHeight > 0) {
-        console.log("⚠️ Fechando alerta modal detectado na tela...");
-        btn.click();
-        await esperar(400);
-      }
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+    if (descriptor && descriptor.set) {
+      descriptor.set.call(inputElement, valor);
+    } else {
+      inputElement.value = valor;
     }
+  } catch (e) {
+    inputElement.value = valor;
   }
-}
 
-function atribuirValorInput(inputElement, valor) {
-  if (!inputElement) return;
-  const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-  nativeSetter.call(inputElement, valor);
   inputElement.dispatchEvent(new Event('input', { bubbles: true }));
   inputElement.dispatchEvent(new Event('change', { bubbles: true }));
 }
@@ -105,7 +89,7 @@ async function fecharAlertasModal() {
 }
 
 // ===========================================================
-// 3. MAPA E PREENCHIMENTO MANUAL DE DESTINATÁRIOS E IE
+// 3. MAPA E PREENCHIMENTO MANUAL DE CLIENTES (REMETENTES E EXCEÇÕES)
 // ===========================================================
 const MAPA_IE_DESTINATARIOS_PAGANTES = {
   "43470566003296": "064152774", // IGUATEMI FORTALEZA
@@ -119,7 +103,20 @@ const MAPA_IE_DESTINATARIOS_PAGANTES = {
   "43470566008506": "205226973"  // NATAL
 };
 
-const MAPA_REMETENTES_DADOS = {
+const MAPA_CADASTRO_MANUAL = {
+  // --- EXCEÇÃO: DESTINATÁRIO PAGANTE COM ENDEREÇO MANUAL ---
+  "43470566008689": {
+    nome: "MANAIRA SHOPPING",
+    cep: "58038000",
+    ie: "163868786",
+    numero: "220",
+    cidade: "JOAO PESSOA",
+    estado: "PB",
+    endereco: "AV GOVERNADOR FLAVIO RIBEIRO COUTINHO",
+    produto: "ST3BA"
+  },
+
+  // --- LOJAS CLIENTES / REMETENTES ---
   "43470566007100": { nome: "LEBLON", cep: "22430060", ie: "87400689", numero: "290", produto: "ST2BA" },
   "43470566009065": { nome: "ICARAI", cep: "24220215", ie: "12336730", numero: "239", produto: "ST2BA" },
   "43470566002214": { nome: "RIO DESIGN BARRA", cep: "22793081", ie: "78394005", numero: "7777", produto: "ST2BA" },
@@ -163,11 +160,11 @@ async function preencherIEDestinatarioPagante(escopo, cnpjAlvo) {
   }
 }
 
-async function preencherDestinatarioManual(escopo, cnpjAlvo) {
-  const dados = MAPA_REMETENTES_DADOS[cnpjAlvo];
+async function preencherCadastroManual(escopo, cnpjAlvo) {
+  const dados = MAPA_CADASTRO_MANUAL[cnpjAlvo];
   if (!dados) return false;
 
-  console.log(`✍️ [Destinatário Manual] Preenchendo dados de: ${dados.nome}`);
+  console.log(`✍️ [Cadastro Manual] Preenchendo dados de: ${dados.nome}`);
 
   const selectTax = escopo.querySelector('#taxIdType') || document.getElementById('taxIdType');
   if (selectTax) {
@@ -187,7 +184,7 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
 
     campoCNPJ.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
     campoCNPJ.dispatchEvent(new Event('blur', { bubbles: true }));
-    await esperar(800);
+    await esperar(1200);
   }
 
   const campoNome = escopo.querySelector('#customerName, input[id*="customerName" i]');
@@ -201,25 +198,33 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
   const campoCEP = escopo.querySelector('#zipCode, input[id*="zip" i]');
   if (campoCEP) {
     campoCEP.removeAttribute('readonly');
+    campoCEP.removeAttribute('disabled');
     campoCEP.focus();
     campoCEP.click();
     atribuirValorInput(campoCEP, dados.cep);
     await esperar(300);
 
-    campoCEP.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
-    campoCEP.dispatchEvent(new KeyboardEvent('keyup', { key: 'Tab', keyCode: 9, code: 'Tab', bubbles: true }));
     campoCEP.dispatchEvent(new Event('change', { bubbles: true }));
     campoCEP.dispatchEvent(new Event('blur', { bubbles: true }));
-
-    await esperar(1000);
+    await esperar(500);
   }
 
-  const campoIE = escopo.querySelector('#stateRegistration, input[id*="stateRegistration" i]');
+  const campoIE = escopo.querySelector('#stateRegistration, input[id*="stateRegistration" i]') ||
+    document.getElementById('stateRegistration');
+
   if (campoIE) {
     campoIE.removeAttribute('readonly');
     campoIE.removeAttribute('disabled');
     campoIE.focus();
+    campoIE.click();
+
+    atribuirValorInput(campoIE, "");
+    await esperar(100);
+
     atribuirValorInput(campoIE, dados.ie);
+    await esperar(200);
+
+    campoIE.dispatchEvent(new Event('change', { bubbles: true }));
     campoIE.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
@@ -231,14 +236,25 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
     campoCNAE.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  const campoEndereco = escopo.querySelector('#address, input[id*="address" i]');
-  if (campoEndereco) {
-    if (cnpjAlvo === "43470566012368" && dados.endereco) {
+  // CORREÇÃO AQUI: Só preenche o endereço se explicitamente fornecido no objeto
+  if (dados.endereco) {
+    const campoEndereco = escopo.querySelector('#address, input[id*="address" i]');
+    if (campoEndereco) {
       campoEndereco.removeAttribute('readonly');
       campoEndereco.focus();
       atribuirValorInput(campoEndereco, dados.endereco);
       campoEndereco.dispatchEvent(new Event('blur', { bubbles: true }));
     }
+  }
+
+  if (dados.cidade) {
+    const campoCidade = escopo.querySelector('#cityName, input[id*="city" i]');
+    if (campoCidade) atribuirValorInput(campoCidade, dados.cidade);
+  }
+
+  if (dados.estado) {
+    const campoEstado = escopo.querySelector('#stateCode, input[id*="state" i]');
+    if (campoEstado) atribuirValorInput(campoEstado, dados.estado);
   }
 
   const campoNumero = escopo.querySelector('#streetNum, #buildingNumber, input[id*="streetNum" i], input[id*="buildingNumber" i]') ||
@@ -256,7 +272,7 @@ async function preencherDestinatarioManual(escopo, cnpjAlvo) {
   }
 
   await esperar(800);
-  console.log(`✅ [Destinatário Manual] ${dados.nome} preenchido com sucesso! Numeração: ${dados.numero}`);
+  console.log(`✅ [Cadastro Manual] ${dados.nome} preenchido com IE ${dados.ie}!`);
   return true;
 }
 
@@ -312,64 +328,7 @@ async function preencherEBuscarCNPJ(cnpjValor, abaId = '') {
 }
 
 // ===========================================================
-// 5. TRATATIVA EXCLUSIVA DO MANAÍRA SHOPPING (POPUP CEP)
-// ===========================================================
-async function tratarManairaShopping(escopo) {
-  console.log("🛍️ Executando tratativa especial de CEP para MANAIRA SHOPPING...");
-
-  const lupaCEP = escopo.querySelector('#lovZipCode, img[onclick*="ZipCode" i], img[src*="search" i][id*="Zip" i]') ||
-    document.getElementById('lovZipCode');
-
-  if (lupaCEP) {
-    lupaCEP.click();
-    await esperar(1500);
-  }
-
-  const tabelaZip = document.querySelector('table[id*="zip" i], .ui-jqgrid-btable');
-  if (tabelaZip) {
-    const primeiraLinha = tabelaZip.querySelector('tbody tr.jqgrow, tbody tr:nth-child(2)');
-    if (primeiraLinha) {
-      primeiraLinha.click();
-      const tdQualquer = primeiraLinha.querySelector('td');
-      if (tdQualquer) tdQualquer.click();
-      await esperar(400);
-    }
-  }
-
-  const btnOk = document.getElementById('buttonFiveDialogOK') ||
-    document.getElementById('lovDialogOK') ||
-    Array.from(document.querySelectorAll('button')).find(b => b.innerText?.trim().toUpperCase() === 'OK' && b.offsetWidth > 0);
-
-  if (btnOk) {
-    if (window.$ || window.jQuery) {
-      (window.$ || window.jQuery)(btnOk).trigger('click');
-    } else {
-      btnOk.click();
-    }
-    await esperar(1200);
-  }
-
-  const campoNumero = escopo.querySelector('#streetNum, #buildingNumber, input[name*="buildingNumber" i]') ||
-    document.getElementById('streetNum') || document.getElementById('buildingNumber');
-
-  if (campoNumero) {
-    campoNumero.removeAttribute('disabled');
-    campoNumero.removeAttribute('readonly');
-    campoNumero.focus();
-    campoNumero.click();
-
-    atribuirValorInput(campoNumero, "220");
-    await esperar(300);
-
-    campoNumero.dispatchEvent(new Event('change', { bubbles: true }));
-    campoNumero.dispatchEvent(new Event('blur', { bubbles: true }));
-
-    console.log("✅ [MANAIRA SHOPPING] CEP e Número 220 confirmados!");
-  }
-}
-
-// ===========================================================
-// 6. ORQUESTRADOR PRINCIPAL DO CROAMIS
+// 5. ORQUESTRADOR PRINCIPAL DO CROAMIS
 // ===========================================================
 async function preencherFormularioCroamis(dados) {
   console.log("⚡ Executando automação no CROAMIS para:", dados);
@@ -406,12 +365,16 @@ async function preencherFormularioCroamis(dados) {
   }
 
   if (ehPagadorDestinatario) {
-    // REGRA 1: PAGADOR = DESTINATÁRIO (Maceió, Salvador Shopping, Aracaju...)
-    console.log(`💳 [Tomador - Pagador Destinatário] Injetando CNPJ da loja ${cnpjCliente}...`);
-    await preencherEBuscarCNPJ(cnpjCliente, 'tabpage_1');
-    await esperar(800);
+    if (cnpjCliente === "43470566008689" || nomeCliente.includes("MANAIRA")) {
+      console.log(`🛍️ [Tomador] Aplicando preenchimento manual de exceção do MANAÍRA SHOPPING na Aba 1...`);
+      await preencherCadastroManual(document.getElementById('tabpage_1') || document, "43470566008689");
+    } else {
+      console.log(`💳 [Tomador - Pagador Destinatário] Injetando CNPJ da loja ${cnpjCliente}...`);
+      await preencherEBuscarCNPJ(cnpjCliente, 'tabpage_1');
+      await esperar(800);
 
-    await preencherIEDestinatarioPagante(document.getElementById('tabpage_1') || document, cnpjCliente);
+      await preencherIEDestinatarioPagante(document.getElementById('tabpage_1') || document, cnpjCliente);
+    }
 
     const chkCopiarDestinatario = document.querySelector('#tabpage_1 input[value="Destinatario"], #tabpage_1 input[id*="Destinatario"]');
     if (chkCopiarDestinatario && !chkCopiarDestinatario.checked) {
@@ -419,7 +382,20 @@ async function preencherFormularioCroamis(dados) {
       chkCopiarDestinatario.checked = true;
       chkCopiarDestinatario.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    await esperar(800);
+    await esperar(1000);
+
+    if (cnpjCliente === "43470566008689" || nomeCliente.includes("MANAIRA")) {
+      console.log("🔒 [Manaíra] Aplicando trava anti-sobrescrita de IE (163868786)...");
+      const camposIE = document.querySelectorAll('#stateRegistration, input[id*="stateRegistration" i]');
+      camposIE.forEach(campo => {
+        campo.removeAttribute('readonly');
+        campo.removeAttribute('disabled');
+        atribuirValorInput(campo, "163868786");
+        campo.dispatchEvent(new Event('change', { bubbles: true }));
+        campo.dispatchEvent(new Event('blur', { bubbles: true }));
+      });
+      await esperar(300);
+    }
 
     const tabRemetente = document.querySelector('#tabHeader_2 a') || document.getElementById('tabHeader_2');
     if (tabRemetente) {
@@ -439,7 +415,7 @@ async function preencherFormularioCroamis(dados) {
     await esperar(1000);
 
   } else {
-    // REGRA 2: PAGADOR = REMETENTE (Icaraí, Haight, Tijuca, Batel, Ilha, Rio Poty...)
+    // REGRA 2: PAGADOR = REMETENTE (Matriz na Aba 1 e Loja na Aba 3)
     console.log(`💳 [Tomador - Pagador Remetente] Injetando CNPJ da MATRIZ ${cnpjMatriz}...`);
     await preencherEBuscarCNPJ(cnpjMatriz, 'tabpage_1');
     await esperar(1000);
@@ -460,15 +436,16 @@ async function preencherFormularioCroamis(dados) {
 
     if (cnpjCliente) {
       console.log(`🎯 [Destinatário] Preenchendo dados da loja cliente: ${cnpjCliente}...`);
-      const foiManual = await preencherDestinatarioManual(document.getElementById('tabpage_3') || document, cnpjCliente);
+      let foiManual = false;
+
+      // Chama preenchimento manual apenas para excepção cadastrada de fato
+      if (MAPA_CADASTRO_MANUAL[cnpjCliente]) {
+        foiManual = await preencherCadastroManual(document.getElementById('tabpage_3') || document, cnpjCliente);
+      }
 
       if (!foiManual) {
         await preencherEBuscarCNPJ(cnpjCliente, 'tabpage_3');
       }
-    }
-
-    if (cnpjCliente === "43470566008689" || nomeCliente.includes("MANAIRA")) {
-      await tratarManairaShopping(document.getElementById('tabpage_3') || document);
     }
   }
 
@@ -620,7 +597,7 @@ async function preencherFormularioCroamis(dados) {
   await esperar(800);
 
   // -----------------------------------------------------------
-  // PASSO F: TRATAMENTO -> SERVIÇO -> PRODUTO (MANAUARA = ST5BA | ILHA/POTY = ST3BA)
+  // PASSO F: TRATAMENTO -> SERVIÇO -> PRODUTO
   // -----------------------------------------------------------
   const campoTreatment = document.getElementById('treatment') || document.querySelector('input[name*="treatment" i], select[name*="treatment" i]');
   if (campoTreatment) {
@@ -644,11 +621,12 @@ async function preencherFormularioCroamis(dados) {
 
   await esperar(400);
 
-  let produtoFinal = "ST3BA"; // Padrão
-  if (nomeCliente.includes("MANAUARA") || cnpjCliente.includes("43470566010586")) {
+  let produtoFinal = "ST3BA";
+  if (MAPA_CADASTRO_MANUAL[cnpjCliente] && MAPA_CADASTRO_MANUAL[cnpjCliente].produto) {
+    produtoFinal = MAPA_CADASTRO_MANUAL[cnpjCliente].produto;
+  } else if (nomeCliente.includes("MANAUARA") || cnpjCliente.includes("43470566010586")) {
     produtoFinal = "ST5BA";
   } else if (
-    (MAPA_REMETENTES_DADOS[cnpjCliente] && cnpjCliente !== "43470566010403" && cnpjCliente !== "43470566013763") ||
     nomeCliente.includes("SALVADOR") ||
     nomeCliente.includes("MACEIO") ||
     nomeCliente.includes("NATAL") ||
@@ -734,7 +712,6 @@ async function preencherFormularioCroamis(dados) {
     }
     await esperar(300);
 
-    // 1. Chave de Acesso
     const tdChave = trAtual.querySelector('td[aria-describedby*="accessKey"]');
     let inputChave = document.getElementById(`${idLinhaReal}_accessKey`) || (tdChave ? tdChave.querySelector('input') : null);
 
@@ -746,7 +723,6 @@ async function preencherFormularioCroamis(dados) {
       await esperar(200);
     }
 
-    // 2. Valor da Carga
     const tdValor = trAtual.querySelector('td[aria-describedby*="cargoValue"]');
     if (tdValor) tdValor.click();
 
@@ -784,7 +760,6 @@ async function preencherFormularioCroamis(dados) {
     await esperar(500);
   }
 
-  // 3. INJEÇÃO DA SOMA NO CAMPO PRINCIPAL (#cargoValue)
   const valorTotalConsolidado = somaTotalCarga.toFixed(2);
   console.log(`💰 Total Consolidado das NFs: R$ ${valorTotalConsolidado}`);
 
