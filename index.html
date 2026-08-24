@@ -596,7 +596,7 @@
     </div>
 
     <script>
-        const URL_WEB_APP ="https://script.google.com/macros/s/AKfycbzp7-DOCnoDL0Xx3t2AC5zfr2yU6eV4c2j115VZt9EE1ecXrup8kkeTLaEAaXGTF7Di/exec";
+        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzp7-DOCnoDL0Xx3t2AC5zfr2yU6eV4c2j115VZt9EE1ecXrup8kkeTLaEAaXGTF7Di/exec";
         const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_rascunho_sessao_atual";
 
         const mapaCNPJShopping = {
@@ -980,7 +980,7 @@
             }
 
             try {
-                // Envia requisição sem travar por CORS
+                // Envia para a planilha Google em segundo plano
                 fetch(URL_WEB_APP, {
                     method: "POST",
                     mode: "no-cors",
@@ -990,13 +990,8 @@
 
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
-                // 🎯 ZERA O ARRAY E REMOVE A CHAVE EXCLUSIVA DA SESSÃO
-                lotesSessaoAtual = [];
-                localStorage.removeItem("shoulders_rascunho_sessao_atual");
-                localStorage.removeItem("shoulders_lotes_rascunho");
-
-                // Limpa a tela do lançamento manual
-                renderizarListaDeLotes();
+                // 🎯 PASSA O CACHE PARA O RESUMO ANTES DE IR
+                localStorage.setItem("shoulders_manual_cache_v3", JSON.stringify(lotesSessaoAtual));
 
                 if (btn) btn.disabled = false;
                 if (boxStatus) {
@@ -1005,7 +1000,7 @@
                     boxStatus.innerText = `✅ Sincronização concluída! Lotes enviados para a planilha.`;
                 }
 
-                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 1500);
+                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 1000);
 
                 if (confirm("Deseja abrir o Resumo das Notas para emitir agora?")) {
                     window.location.href = "./resumo.html";

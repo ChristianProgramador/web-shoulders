@@ -298,21 +298,42 @@
         </div>
 
         <h1>📊 Fechamento Consolidado</h1>
-        <p class="subtitulo">Agrupamento automático por cliente e medidas</p>
+        <p class="subtitulo">Agrupamento automático por cliente e medidas (Cache Local Ultra-Rápido)</p>
 
         <input type="text" id="busca-resumo" class="campo-busca" placeholder="🔍 Buscar por destinatário ou CNPJ..."
             oninput="renderizarResumoComAgrupamento()">
 
-        <button class="btn-atualizar" onclick="carregarDadosPlanilha(true)">🔄 Atualizar e Somar Lotes</button>
+        <button class="btn-atualizar" onclick="recarregarDadosLocais()">🔄 Atualizar e Somar Lotes</button>
         <button class="btn-emitir-todos" onclick="emitirTodosLotes()">🚀 Emitir Todos os Lotes (Abertura
             Simultânea)</button>
 
         <div id="container-resumo-lotes">
-            <div class="status-carregando">Lendo dados...</div>
+            <div class="status-carregando">Carregando dados locais...</div>
         </div>
     </div>
 
     <script>
+
+        function carregarCacheLocal() {
+            const cacheLocal = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
+            if (cacheLocal) {
+                try {
+                    lotesSessaoAtual = JSON.parse(cacheLocal);
+                } catch (e) {
+                    lotesSessaoAtual = [];
+                }
+            } else {
+                lotesSessaoAtual = [];
+            }
+            renderizarLotesSessao(); // Atualiza a interface gráfica na hora
+        }
+
+        // 🎯 Escuta quando a aba recebe foco ou quando o resumo altera o storage
+        window.addEventListener('focus', carregarCacheLocal);
+        window.addEventListener('storage', (e) => {
+            if (e.key === CHAVE_STORAGE_MANUAL_CACHE) carregarCacheLocal();
+        });
+        // 🎯 URL DA PLANILHA GOOGLE CONFIGURADA
         const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzp7-DOCnoDL0Xx3t2AC5zfr2yU6eV4c2j115VZt9EE1ecXrup8kkeTLaEAaXGTF7Di/exec";
         const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_manual_cache_v3";
         const CHAVE_STORAGE_NFES = "shoulders_nfes_cache_v1";
@@ -347,7 +368,7 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             carregarCacheNFes();
-            carregarDadosPlanilha(false);
+            recarregarDadosLocais();
         });
 
         function carregarCacheNFes() {
@@ -366,58 +387,19 @@
             return `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
         }
 
-        function carregarDadosPlanilha(forcado = false) {
-            const container = document.getElementById('container-resumo-lotes');
-
-            // 1. CARREGAMENTO INSTANTÂNEO DO CACHE LOCAL (0ms)
+        function recarregarDadosLocais() {
             const cacheLocal = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
             if (cacheLocal) {
                 try {
                     const arrLocal = JSON.parse(cacheLocal);
-                    if (Array.isArray(arrLocal) && arrLocal.length > 0) {
+                    if (Array.isArray(arrLocal)) {
                         dadosBrutosGlobal = arrLocal;
-                        renderizarResumoComAgrupamento();
                     }
-                } catch (e) { console.error("Erro no cache local:", e); }
+                } catch (e) { console.error("Erro ao carregar dados locais:", e); }
+            } else {
+                dadosBrutosGlobal = [];
             }
-
-            // 2. BUSCA ONLINE VIA JSONP (BULA O BLOQUEIO DE CORS)
-            if (forcado || dadosBrutosGlobal.length === 0) {
-                if (dadosBrutosGlobal.length === 0) {
-                    container.innerHTML = `<div class="status-carregando">⏳ Buscando dados da planilha online...</div>`;
-                }
-
-                const callbackName = "cb_" + Math.floor(Math.random() * 100000);
-                window[callbackName] = function (dados) {
-                    delete window[callbackName];
-                    const scriptOld = document.getElementById('jsonp-script');
-                    if (scriptOld) scriptOld.remove();
-
-                    const listaFinal = Array.isArray(dados) ? dados : (dados && dados.dados ? dados.dados : []);
-                    if (listaFinal.length > 0) {
-                        dadosBrutosGlobal = listaFinal;
-                        localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(dadosBrutosGlobal));
-                        renderizarResumoComAgrupamento();
-                    } else if (dadosBrutosGlobal.length === 0) {
-                        container.innerHTML = `<div class="status-carregando">Nenhum lote cadastrado no momento.</div>`;
-                    }
-                };
-
-                const scriptOld = document.getElementById('jsonp-script');
-                if (scriptOld) scriptOld.remove();
-
-                const script = document.createElement('script');
-                script.id = 'jsonp-script';
-                script.src = `${URL_WEB_APP}?callback=${callbackName}&_=${Date.now()}`;
-
-                script.onerror = function () {
-                    if (dadosBrutosGlobal.length === 0) {
-                        container.innerHTML = `<div class="status-carregando" style="color: #dc3545;">⚠️ Falha ao conectar com a planilha. Verifique a URL_WEB_APP.</div>`;
-                    }
-                };
-
-                document.body.appendChild(script);
-            }
+            renderizarResumoComAgrupamento();
         }
 
         function renderizarResumoComAgrupamento() {
@@ -426,7 +408,7 @@
             const dataHoje = obterDataHoje();
 
             if (!dadosBrutosGlobal || dadosBrutosGlobal.length === 0) {
-                container.innerHTML = `<div class="status-carregando">Nenhum lote cadastrado no momento.</div>`;
+                container.innerHTML = `<div class="status-carregando">Nenhum lote cadastrado no momento. Cadastre lotes na Entrada Manual.</div>`;
                 return;
             }
 
@@ -480,10 +462,7 @@
             let html = "";
             datasOrdenadas.forEach(dataKey => {
                 const ehHoje = dataKey === dataHoje;
-
-                // 🎯 DEFINIDO COMO FALSE PARA VIR FECHADO POR PADRÃO
                 if (estadoSanfonaDatas[dataKey] === undefined) estadoSanfonaDatas[dataKey] = false;
-
                 const estaAberto = estadoSanfonaDatas[dataKey];
 
                 html += `
@@ -654,33 +633,33 @@
             renderizarResumoComAgrupamento();
         }
 
-        async function excluirLoteCompletoCliente(dataStr, clienteNome) {
-            if (!confirm(`⚠️ Confirmar EXCLUSÃO do lote completo do cliente "${clienteNome}" na data ${dataStr}?`)) return;
+        // 🎯 EXCLUSÃO COMPLETA (TELA + LOCALSTORAGE + GOOGLE SHEETS)
+        function excluirLoteCompletoCliente(dataStr, clienteNome) {
+            if (!confirm(`⚠️ Confirmar EXCLUSÃO do lote de "${clienteNome}" no Resumo e na Planilha?`)) return;
 
-            dadosBrutosGlobal = dadosBrutosGlobal.filter(item => {
-                let d = item.data ? String(item.data).trim() : "";
-                if (d.includes("T")) d = d.split("T")[0];
-                if (d.includes("-") && d.length >= 10) {
-                    const p = d.substring(0, 10).split("-");
-                    d = `${p[2]}/${p[1]}/${p[0]}`;
-                }
-                const cli = (item.destinatario || item.nome || "").toUpperCase().trim();
-                return !(cli === clienteNome.toUpperCase().trim() && (d === dataStr || !d));
+            // 1. DISPARA A REQUISIÇÃO PARA EXCLUIR NA PLANILHA GOOGLE
+            fetch(URL_WEB_APP, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    acao: "EXCLUIR_LOTE_CLIENTE",
+                    destinatario: clienteNome,
+                    data: dataStr
+                })
             });
 
-            localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(dadosBrutosGlobal));
-            renderizarResumoComAgrupamento();
+            // 2. LIMPA A MEMÓRIA DO RESUMO NA HORA
+            dadosBrutosGlobal = dadosBrutosGlobal.filter(item => {
+                const cli = (item.destinatario || item.nome || "").toUpperCase().trim();
+                return cli !== clienteNome.toUpperCase().trim();
+            });
 
-            try {
-                fetch(URL_WEB_APP, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ acao: "EXCLUIR_LOTE_CLIENTE", destinatario: clienteNome, data: dataStr })
-                });
-            } catch (erro) {
-                console.error("Erro na comunicação de exclusão com o servidor:", erro);
-            }
+            // 3. ATUALIZA O CACHE LOCAL PARA O MANUAL NÃO MOSTRAR DE VOLTA
+            localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(dadosBrutosGlobal));
+
+            // 4. RENDERIZA A TELA LIMPA
+            renderizarResumoComAgrupamento();
         }
 
         function emitirCroamisPeloCard(cardId, cliente, cnpj, totalVol, totalPeso) {
