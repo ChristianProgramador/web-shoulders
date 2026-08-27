@@ -313,27 +313,6 @@
     </div>
 
     <script>
-
-        function carregarCacheLocal() {
-            const cacheLocal = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
-            if (cacheLocal) {
-                try {
-                    lotesSessaoAtual = JSON.parse(cacheLocal);
-                } catch (e) {
-                    lotesSessaoAtual = [];
-                }
-            } else {
-                lotesSessaoAtual = [];
-            }
-            renderizarLotesSessao(); // Atualiza a interface gráfica na hora
-        }
-
-        // 🎯 Escuta quando a aba recebe foco ou quando o resumo altera o storage
-        window.addEventListener('focus', carregarCacheLocal);
-        window.addEventListener('storage', (e) => {
-            if (e.key === CHAVE_STORAGE_MANUAL_CACHE) carregarCacheLocal();
-        });
-        // 🎯 URL DA PLANILHA GOOGLE CONFIGURADA
         const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzp7-DOCnoDL0Xx3t2AC5zfr2yU6eV4c2j115VZt9EE1ecXrup8kkeTLaEAaXGTF7Di/exec";
         const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_manual_cache_v3";
         const CHAVE_STORAGE_NFES = "shoulders_nfes_cache_v3";
@@ -387,18 +366,20 @@
             return `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
         }
 
-        function recarregarDadosLocais() {
-            const cacheLocal = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
-            if (cacheLocal) {
-                try {
-                    const arrLocal = JSON.parse(cacheLocal);
-                    if (Array.isArray(arrLocal)) {
-                        dadosBrutosGlobal = arrLocal;
-                    }
-                } catch (e) { console.error("Erro ao carregar dados locais:", e); }
-            } else {
-                dadosBrutosGlobal = [];
+        async function recarregarDadosLocais() {
+            const container = document.getElementById('container-resumo-lotes');
+            container.innerHTML = `<div class="status-carregando">⏳ Buscando lotes atualizados na nuvem...</div>`;
+
+            try {
+                const resposta = await fetch(URL_WEB_APP);
+                const jsonNuvem = await resposta.json();
+                dadosBrutosGlobal = (jsonNuvem && jsonNuvem.dados) ? jsonNuvem.dados : [];
+            } catch (erro) {
+                console.warn("⚠️ Falha ao buscar na nuvem, tentando cache local:", erro);
+                const cacheLocal = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
+                dadosBrutosGlobal = cacheLocal ? JSON.parse(cacheLocal) : [];
             }
+
             renderizarResumoComAgrupamento();
         }
 
@@ -629,15 +610,12 @@
                 }
             });
 
-            localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(dadosBrutosGlobal));
             renderizarResumoComAgrupamento();
         }
 
-        // 🎯 EXCLUSÃO COMPLETA (TELA + LOCALSTORAGE + GOOGLE SHEETS)
         function excluirLoteCompletoCliente(dataStr, clienteNome) {
             if (!confirm(`⚠️ Confirmar EXCLUSÃO do lote de "${clienteNome}" no Resumo e na Planilha?`)) return;
 
-            // 1. DISPARA A REQUISIÇÃO PARA EXCLUIR NA PLANILHA GOOGLE
             fetch(URL_WEB_APP, {
                 method: "POST",
                 mode: "no-cors",
@@ -649,16 +627,11 @@
                 })
             });
 
-            // 2. LIMPA A MEMÓRIA DO RESUMO NA HORA
             dadosBrutosGlobal = dadosBrutosGlobal.filter(item => {
                 const cli = (item.destinatario || item.nome || "").toUpperCase().trim();
                 return cli !== clienteNome.toUpperCase().trim();
             });
 
-            // 3. ATUALIZA O CACHE LOCAL PARA O MANUAL NÃO MOSTRAR DE VOLTA
-            localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(dadosBrutosGlobal));
-
-            // 4. RENDERIZA A TELA LIMPA
             renderizarResumoComAgrupamento();
         }
 

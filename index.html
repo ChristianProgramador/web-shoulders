@@ -28,11 +28,9 @@
             transition: max-width 0.3s ease;
         }
 
-        /* 📱 MOBILE FIRST: No celular a lista (coluna-direita) fica NO TOPO e o formulário (coluna-esquerda) fica ABAIXO */
         .painel-split {
             display: flex;
             flex-direction: column-reverse;
-            /* 🎯 AQUI: Inverte a ordem no celular */
             gap: 20px;
             width: 100%;
         }
@@ -42,7 +40,6 @@
             width: 100%;
         }
 
-        /* 💻 ESTRUTURA LADO A LADO PARA DESKTOP (PC) */
         @media (min-width: 900px) {
             .container {
                 max-width: 1250px;
@@ -50,7 +47,6 @@
 
             .painel-split {
                 flex-direction: row;
-                /* 🎯 Volta a ficar LADO A LADO na tela grande do PC */
                 align-items: flex-start;
             }
 
@@ -176,7 +172,6 @@
             text-align: left;
         }
 
-        /* 📊 BANNER DE MÉTRICAS DO DIA */
         .banner-metricas-dia {
             display: flex;
             justify-content: space-between;
@@ -588,42 +583,18 @@
         const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_manual_cache_v3";
 
         const mapaCNPJShopping = {
-            "PLAZA CASA FORTE": "43470566006716",
-            "RIO MAR FORTALEZA": "43470566005906",
-            "RIO MAR ARACAJU": "43470566008760",
-            "RIO MAR": "43470566004268",
-            "IGUATEMI FORTALEZA": "43470566003296",
-            "RECIFE": "43470566002729",
-            "BARRA SALVADOR": "43470566004241",
-            "TIJUCA": "43470566006988",
-            "RIO SUL": "43470566010829",
-            "CATUAÍ MARINGA": "43470566012287",
-            "VITORIA": "43470566008417",
-            "BOULEVARD BELÉM": "43470566009227",
-            "MANAUARA": "43470566010586",
-            "ILHA": "43470566010403",
-            "LEBLON": "43470566007100",
-            "SHOPPING DA BAHIA": "43470566010071",
-            "ICARAI": "43470566009065",
-            "MIDWAY": "43470566011043",
-            "VILA VELHA": "43470566010233",
-            "BATEL": "43470566007879",
-            "RIO POTY": "43470566013763",
-            "CATUAÍ LONDRINA": "43470566012368",
-            "MACEIO": "43470566008093",
-            "MUELLER": "43470566001919",
-            "SHOPPING GRAO PARÁ": "43470566009146",
-            "MANAIRA SHOPPING": "43470566008689",
-            "BARRA SHOPPING": "43470566004853",
-            "HAIGHT DIAS": "43470566013330",
-            "HAIGHT VILLAGE MALL": "43470566013925",
-            "RIO DESIGN BARRA": "43470566002214",
-            "HAIGHT LEBLON": "43470566013844",
-            "NATAL": "43470566008506",
-            "HAIGHT RIO DESIGN": "43470566013500",
-            "SALVADOR SHOPPING": "43470566002052",
-            "FABIO MELO": "37208921000176",
-            "MONIZ": "49810965000193",
+            "PLAZA CASA FORTE": "43470566006716", "RIO MAR FORTALEZA": "43470566005906", "RIO MAR ARACAJU": "43470566008760",
+            "RIO MAR": "43470566004268", "IGUATEMI FORTALEZA": "43470566003296", "RECIFE": "43470566002729",
+            "BARRA SALVADOR": "43470566004241", "TIJUCA": "43470566006988", "RIO SUL": "43470566010829",
+            "CATUAÍ MARINGA": "43470566012287", "VITORIA": "43470566008417", "BOULEVARD BELÉM": "43470566009227",
+            "MANAUARA": "43470566010586", "ILHA": "43470566010403", "LEBLON": "43470566007100",
+            "SHOPPING DA BAHIA": "43470566010071", "ICARAI": "43470566009065", "MIDWAY": "43470566011043",
+            "VILA VELHA": "43470566010233", "BATEL": "43470566007879", "RIO POTY": "43470566013763",
+            "CATUAÍ LONDRINA": "43470566012368", "MACEIO": "43470566008093", "MUELLER": "43470566001919",
+            "SHOPPING GRAO PARÁ": "43470566009146", "MANAIRA SHOPPING": "43470566008689", "BARRA SHOPPING": "43470566004853",
+            "HAIGHT DIAS": "43470566013330", "HAIGHT VILLAGE MALL": "43470566013925", "RIO DESIGN BARRA": "43470566002214",
+            "HAIGHT LEBLON": "43470566013844", "NATAL": "43470566008506", "HAIGHT RIO DESIGN": "43470566013500",
+            "SALVADOR SHOPPING": "43470566002052", "FABIO MELO": "37208921000176", "MONIZ": "49810965000193",
             "FORMA PORTO": "56538551000130"
         };
 
@@ -640,45 +611,12 @@
                 }
             });
 
-            carregarDadosDaNuvem();
+            carregarCacheLocal();
         });
 
-        // 🎯 Sincroniza em tempo real sempre que voltar para esta aba
-        window.addEventListener('focus', carregarDadosDaNuvem);
         window.addEventListener('storage', (e) => {
             if (e.key === CHAVE_STORAGE_MANUAL_CACHE) carregarCacheLocal();
         });
-
-        // 🎯 Busca os dados sincronizados na Planilha Google (Celular + PC)
-        async function carregarDadosDaNuvem() {
-            try {
-                const resposta = await fetch(URL_WEB_APP);
-                const jsonNuvem = await resposta.json();
-
-                const dadosNuvem = (jsonNuvem && jsonNuvem.dados) ? jsonNuvem.dados : [];
-
-                if (Array.isArray(dadosNuvem) && dadosNuvem.length > 0) {
-                    lotesSessaoAtual = dadosNuvem.map((item, idx) => ({
-                        id: item.id || Date.now() + idx,
-                        data: item.data || obterDataHoje(),
-                        destinatario: item.destinatario || item.nome || "",
-                        nome: item.destinatario || item.nome || "",
-                        cnpj: mapaCNPJShopping[item.destinatario || item.nome] || "",
-                        pallet: item.pallet || "Pallet 1",
-                        peso: parseFloat(item.peso) || 0,
-                        quantidade: parseInt(item.quantidade, 10) || 1,
-                        medida: item.medida || "PADRÃO"
-                    }));
-                    salvarCacheLocalSilencioso();
-                } else {
-                    carregarCacheLocal();
-                }
-            } catch (erro) {
-                console.warn("⚠️ Falha ao conectar à nuvem, carregando rascunho local:", erro);
-                carregarCacheLocal();
-            }
-            renderizarListaDeLotes();
-        }
 
         function salvarCacheLocalSilencioso() {
             try {
@@ -696,11 +634,7 @@
         function carregarCacheLocal() {
             try {
                 const salvo = localStorage.getItem(CHAVE_STORAGE_MANUAL_CACHE);
-                if (salvo) {
-                    lotesSessaoAtual = JSON.parse(salvo);
-                } else {
-                    lotesSessaoAtual = [];
-                }
+                lotesSessaoAtual = salvo ? JSON.parse(salvo) : [];
             } catch (e) {
                 console.error("Erro ao carregar rascunho local:", e);
                 lotesSessaoAtual = [];
@@ -722,26 +656,22 @@
 
         function validarSelecaoCliente(valorInput) {
             if (ignorarValidacaoDuplicado) return;
-
             const clienteNome = extrairNomeCliente(valorInput);
             if (!clienteNome) return;
 
             const clienteExiste = lotesSessaoAtual.some(item => (item.destinatario || "").toUpperCase() === clienteNome);
-
             if (clienteExiste) {
-                alert(`⚠️ O destinatário "${clienteNome}" já possui um lote criado!\n\nPara incluir mais caixas a este cliente, use o botão "➕ Add Caixa" dentro do card dele na coluna ao lado.`);
+                alert(`⚠️ O destinatário "${clienteNome}" já possui um lote criado!\n\nPara incluir mais caixas a este cliente, use o botão "➕ Add Caixa" dentro do card dele.`);
                 document.getElementById('manual-cliente-input').value = "";
             }
         }
 
         function verificarMedidaCustomizada(select) {
-            const custom = document.getElementById('manual-medida-custom');
-            custom.style.display = select.value === 'CUSTOM' ? 'block' : 'none';
+            document.getElementById('manual-medida-custom').style.display = select.value === 'CUSTOM' ? 'block' : 'none';
         }
 
         function verificarPalletCustomizado(select) {
-            const custom = document.getElementById('manual-pallet-custom');
-            custom.style.display = select.value === 'CUSTOM' ? 'block' : 'none';
+            document.getElementById('manual-pallet-custom').style.display = select.value === 'CUSTOM' ? 'block' : 'none';
         }
 
         function adicionarCaixaAoLoteVisivel() {
@@ -751,10 +681,21 @@
             if (!cliente) { alert("⚠️ Selecione um cliente!"); return; }
 
             const selectPallet = document.getElementById('manual-pallet');
-            const pallet = selectPallet.value === 'CUSTOM' ? document.getElementById('manual-pallet-custom').value.trim().toUpperCase() : selectPallet.value;
+            const valPallet = selectPallet.value.toUpperCase();
+            const pallet = valPallet === 'CUSTOM'
+                ? document.getElementById('manual-pallet-custom').value.trim().toUpperCase()
+                : selectPallet.value;
 
             const selectMedida = document.getElementById('manual-medida');
-            const medida = selectMedida.value === 'CUSTOM' ? document.getElementById('manual-medida-custom').value.trim().toUpperCase() : selectMedida.value;
+            const valMedida = selectMedida.value.toUpperCase();
+            const medida = valMedida === 'CUSTOM'
+                ? document.getElementById('manual-medida-custom').value.trim().toUpperCase()
+                : selectMedida.value;
+
+            if (valMedida === 'CUSTOM' && !medida) {
+                alert("⚠️ Digite a medida customizada!");
+                return;
+            }
 
             const qtd = parseInt(document.getElementById('manual-qtd').value, 10) || 1;
             const peso = parseFloat(document.getElementById('manual-peso').value.replace(',', '.')) || 0;
@@ -773,10 +714,10 @@
                 medida: medida
             };
 
-            // Insere o novo lote para renderização local
             lotesSessaoAtual.push(item);
             salvarCacheLocal();
 
+            // Reset dos campos
             inputCliente.value = "";
             document.getElementById('manual-peso').value = "";
             document.getElementById('manual-qtd').value = "1";
@@ -799,20 +740,16 @@
             document.getElementById('manual-pallet').value = pallet;
 
             inputCliente.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-                document.getElementById('manual-peso').focus();
-            }, 300);
+            setTimeout(() => { document.getElementById('manual-peso').focus(); }, 300);
         }
 
         function moverLoteClientePallet(palletOrigem, cliente, novoPallet) {
             if (!novoPallet || palletOrigem === novoPallet) return;
-
             lotesSessaoAtual.forEach(item => {
                 if (item.pallet === palletOrigem && item.destinatario === cliente) {
                     item.pallet = novoPallet;
                 }
             });
-
             salvarCacheLocal();
         }
 
@@ -848,14 +785,11 @@
 
             const estruturaPallets = {};
 
-            // Iterate over items
             lotesSessaoAtual.forEach((item, originalIndex) => {
                 const p = item.pallet || "Pallet Indefinido";
                 const c = item.destinatario || "Cliente Sem Nome";
 
-                if (termoBusca && !p.toLowerCase().includes(termoBusca) && !c.toLowerCase().includes(termoBusca) && !(item.cnpj || "").includes(termoBusca)) {
-                    return;
-                }
+                if (termoBusca && !p.toLowerCase().includes(termoBusca) && !c.toLowerCase().includes(termoBusca) && !(item.cnpj || "").includes(termoBusca)) return;
 
                 if (!estruturaPallets[p]) estruturaPallets[p] = {};
                 if (!estruturaPallets[p][c]) estruturaPallets[p][c] = { cnpj: item.cnpj, caixas: [] };
@@ -864,8 +798,6 @@
             });
 
             let html = "";
-
-            // 🎯 LOTE NOVO NO TOPO DO CELULAR: Inverte a ordem das chaves de Pallets
             const palletsOrdenados = Object.keys(estruturaPallets).reverse();
 
             palletsOrdenados.forEach(palletNome => {
@@ -877,7 +809,6 @@
                         <div class="card-pallet-titulo">📍 ${palletNome}</div>
                 `;
 
-                // Inverte também a ordem dos clientes dentro do pallet
                 const clientesOrdenados = Object.keys(estruturaPallets[palletNome]).reverse();
 
                 clientesOrdenados.forEach(clienteNome => {
@@ -918,26 +849,25 @@
                         totalVolPallet += cx.quantidade;
                         totalPesoPallet += cx.peso;
 
-                        if (!subtotalMedidas[cx.medida]) {
-                            subtotalMedidas[cx.medida] = { vol: 0, peso: 0 };
-                        }
+                        if (!subtotalMedidas[cx.medida]) subtotalMedidas[cx.medida] = { vol: 0, peso: 0 };
                         subtotalMedidas[cx.medida].vol += cx.quantidade;
                         subtotalMedidas[cx.medida].peso += cx.peso;
 
                         const medAtual = String(cx.medida || "").trim().toUpperCase();
+                        const medidasPadrao = ['PADRÃO', '60X39X23', '60X39X10', '66X60X10', '39X33X23', '39X33X10'];
+                        const ehCustomizada = !medidasPadrao.some(m => medAtual.includes(m));
 
                         html += `
                             <tr>
                                 <td>
-                                    <select class="select-medida-linha" 
-                                            style="font-weight: 600; padding: 2px 4px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer;"
-                                            onchange="alterarMedidaDireta(${cx.originalIndex}, this.value)">
+                                    <select class="select-medida-linha" style="font-weight: 600; padding: 2px 4px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer;" onchange="alterarMedidaDireta(${cx.originalIndex}, this.value)">
                                         <option value="PADRÃO" ${medAtual === 'PADRÃO' || medAtual.includes('60X39X33') ? 'selected' : ''}>PADRÃO (60x39x33)</option>
                                         <option value="60x39x23" ${medAtual.includes('60X39X23') ? 'selected' : ''}>60x39x23</option>
                                         <option value="60x39x10" ${medAtual.includes('60X39X10') ? 'selected' : ''}>60x39x10</option>
                                         <option value="66x60x10" ${medAtual.includes('66X60X10') ? 'selected' : ''}>66x60x10</option>
                                         <option value="39x33x23" ${medAtual.includes('39X33X23') ? 'selected' : ''}>39x33x23</option>
                                         <option value="39x33x10" ${medAtual.includes('39X33X10') ? 'selected' : ''}>39x33x10</option>
+                                        ${ehCustomizada ? `<option value="${cx.medida}" selected>${cx.medida}</option>` : ''}
                                     </select>
                                 </td>
                                 <td>${cx.quantidade}</td>
@@ -950,17 +880,12 @@
                         `;
                     });
 
-                    let textoSubtotais = Object.keys(subtotalMedidas).map(m => {
-                        return `Total ${m}: ${subtotalMedidas[m].vol} Vol | ${subtotalMedidas[m].peso.toFixed(1)} Kg`;
-                    }).join(" &nbsp;|&nbsp; ");
+                    let textoSubtotais = Object.keys(subtotalMedidas).map(m => `Total ${m}: ${subtotalMedidas[m].vol} Vol | ${subtotalMedidas[m].peso.toFixed(1)} Kg`).join(" &nbsp;|&nbsp; ");
 
                     html += `
                                 </tbody>
                             </table>
-
-                            <div class="box-subtotal-medida">
-                                🔹 ${textoSubtotais}
-                            </div>
+                            <div class="box-subtotal-medida">🔹 ${textoSubtotais}</div>
                         </div>
                     `;
                 });
@@ -985,7 +910,6 @@
 
             cx.quantidade = parseInt(novaQtd, 10) || cx.quantidade;
             cx.peso = parseFloat(novoPeso) || cx.peso;
-
             salvarCacheLocal();
         }
 
@@ -1022,7 +946,6 @@
             }
 
             try {
-                // Envia os pacotes para o Google Sheets
                 fetch(URL_WEB_APP, {
                     method: "POST",
                     mode: "no-cors",
@@ -1030,12 +953,8 @@
                     body: JSON.stringify({ acao: "SALVAR_LOTE_COMPLETO", pacotes: lotesSessaoAtual })
                 });
 
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 800));
 
-                // 🎯 PASSA O CACHE PARA O RESUMO
-                localStorage.setItem("shoulders_manual_cache_v3", JSON.stringify(lotesSessaoAtual));
-
-                // 🧹 ZERA OS LOTES DA SESSÃO E O CACHE DE RASCUNHO DA ENTRADA MANUAL
                 lotesSessaoAtual = [];
                 localStorage.removeItem(CHAVE_STORAGE_MANUAL_CACHE);
                 renderizarListaDeLotes();
@@ -1044,10 +963,10 @@
                 if (boxStatus) {
                     boxStatus.style.background = '#d4edda';
                     boxStatus.style.color = '#155724';
-                    boxStatus.innerText = `✅ Sincronização concluída! Formulário limpo e lotes salvos na nuvem.`;
+                    boxStatus.innerText = `✅ Lotes salvos com sucesso e tela limpa!`;
                 }
 
-                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 2000);
+                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 1500);
 
                 if (confirm("Deseja abrir o Resumo das Notas para emitir agora?")) {
                     window.location.href = "./resumo.html";
