@@ -28,10 +28,11 @@
             transition: max-width 0.3s ease;
         }
 
-        /* 💻 ESTRUTURA LADO A LADO PARA DESKTOP */
+        /* 📱 MOBILE FIRST: No celular a lista (coluna-direita) fica NO TOPO e o formulário (coluna-esquerda) fica ABAIXO */
         .painel-split {
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse;
+            /* 🎯 AQUI: Inverte a ordem no celular */
             gap: 20px;
             width: 100%;
         }
@@ -41,6 +42,7 @@
             width: 100%;
         }
 
+        /* 💻 ESTRUTURA LADO A LADO PARA DESKTOP (PC) */
         @media (min-width: 900px) {
             .container {
                 max-width: 1250px;
@@ -48,6 +50,7 @@
 
             .painel-split {
                 flex-direction: row;
+                /* 🎯 Volta a ficar LADO A LADO na tela grande do PC */
                 align-items: flex-start;
             }
 
@@ -1019,6 +1022,7 @@
             }
 
             try {
+                // Envia os pacotes para o Google Sheets
                 fetch(URL_WEB_APP, {
                     method: "POST",
                     mode: "no-cors",
@@ -1028,16 +1032,22 @@
 
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
-                localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(lotesSessaoAtual));
+                // 🎯 PASSA O CACHE PARA O RESUMO
+                localStorage.setItem("shoulders_manual_cache_v3", JSON.stringify(lotesSessaoAtual));
+
+                // 🧹 ZERA OS LOTES DA SESSÃO E O CACHE DE RASCUNHO DA ENTRADA MANUAL
+                lotesSessaoAtual = [];
+                localStorage.removeItem(CHAVE_STORAGE_MANUAL_CACHE);
+                renderizarListaDeLotes();
 
                 if (btn) btn.disabled = false;
                 if (boxStatus) {
                     boxStatus.style.background = '#d4edda';
                     boxStatus.style.color = '#155724';
-                    boxStatus.innerText = `✅ Sincronização concluída! Lotes enviados para a planilha.`;
+                    boxStatus.innerText = `✅ Sincronização concluída! Formulário limpo e lotes salvos na nuvem.`;
                 }
 
-                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 1000);
+                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 2000);
 
                 if (confirm("Deseja abrir o Resumo das Notas para emitir agora?")) {
                     window.location.href = "./resumo.html";
