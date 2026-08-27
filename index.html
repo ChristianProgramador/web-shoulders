@@ -44,12 +44,10 @@
         @media (min-width: 900px) {
             .container {
                 max-width: 1250px;
-                /* Expande o painel para caber os dois lados */
             }
 
             .painel-split {
                 flex-direction: row;
-                /* Coloca Lado a Lado */
                 align-items: flex-start;
             }
 
@@ -57,7 +55,6 @@
                 flex: 1;
                 position: sticky;
                 top: 20px;
-                /* Mantém o formulário fixo ao rolar a página */
             }
 
             .coluna-direita {
@@ -381,12 +378,8 @@
             display: none;
         }
 
-        /* ===========================================================
-   🎯 REGRAS EXCLUSIVAS DE IMPRESSÃO (PDF LIMPO E FORMATADO)
-   =========================================================== */
         @media print {
 
-            /* Esconde o formulário da esquerda, botões de ação e navegação */
             .form-section,
             .btn-emitir-todos,
             .btn-atualizar,
@@ -400,7 +393,6 @@
                 display: none !important;
             }
 
-            /* Expande a área de impressão para 100% da largura da página */
             body,
             .container,
             .main-content,
@@ -413,17 +405,14 @@
                 box-shadow: none !important;
             }
 
-            /* Formatação dos cards de clientes para o papel */
             .card-cliente-resumo,
             .card-pallet {
                 border: 1px solid #333 !important;
                 page-break-inside: avoid !important;
-                /* Evita cortar o card no meio de duas páginas */
                 margin-bottom: 12px !important;
                 padding: 10px !important;
             }
 
-            /* Ajuste de tabelas e selectboxes para aparecerem limpos sem setas */
             select {
                 border: none !important;
                 background: transparent !important;
@@ -432,7 +421,6 @@
                 font-weight: bold;
             }
 
-            /* Garante legibilidade do texto e remove sombras pretas */
             * {
                 color: #000 !important;
                 box-shadow: none !important;
@@ -446,7 +434,7 @@
 
     <div class="container">
         <h1>✍️ Shoulders - Entrada Manual</h1>
-        <p class="subtitulo">Gerenciamento de Lotes e Expedição (Salvo no Celular)</p>
+        <p class="subtitulo">Gerenciamento de Lotes e Expedição (Sincronizado na Nuvem)</p>
 
         <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 20px;">
             <a href="./voice.html"
@@ -461,10 +449,8 @@
 
         <div id="box-status-sinc" class="status-sincronizacao"></div>
 
-        <!-- 🚀 ESTRUTURA DIVIDIDA LADO A LADO -->
         <div class="painel-split">
 
-            <!-- 📝 COLUNA ESQUERDA: FORMULÁRIO -->
             <div class="coluna-esquerda">
                 <div class="form-manual">
 
@@ -570,7 +556,6 @@
                 </div>
             </div>
 
-            <!-- 🔍 COLUNA DIREITA: RESUMO, BUSCA E LISTA DE LOTES -->
             <div class="coluna-direita">
                 <div class="secao-lotes-salvos">
 
@@ -591,13 +576,13 @@
                 </div>
             </div>
 
-        </div> <!-- FIM DA PAINEL-SPLIT -->
+        </div>
 
     </div>
 
     <script>
         const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzp7-DOCnoDL0Xx3t2AC5zfr2yU6eV4c2j115VZt9EE1ecXrup8kkeTLaEAaXGTF7Di/exec";
-        const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_rascunho_sessao_atual";
+        const CHAVE_STORAGE_MANUAL_CACHE = "shoulders_manual_cache_v3";
 
         const mapaCNPJShopping = {
             "PLAZA CASA FORTE": "43470566006716",
@@ -652,15 +637,56 @@
                 }
             });
 
-            carregarCacheLocal();
+            carregarDadosDaNuvem();
         });
 
-        function salvarCacheLocal() {
+        // 🎯 Sincroniza em tempo real sempre que voltar para esta aba
+        window.addEventListener('focus', carregarDadosDaNuvem);
+        window.addEventListener('storage', (e) => {
+            if (e.key === CHAVE_STORAGE_MANUAL_CACHE) carregarCacheLocal();
+        });
+
+        // 🎯 Busca os dados sincronizados na Planilha Google (Celular + PC)
+        async function carregarDadosDaNuvem() {
+            try {
+                const resposta = await fetch(URL_WEB_APP);
+                const jsonNuvem = await resposta.json();
+
+                const dadosNuvem = (jsonNuvem && jsonNuvem.dados) ? jsonNuvem.dados : [];
+
+                if (Array.isArray(dadosNuvem) && dadosNuvem.length > 0) {
+                    lotesSessaoAtual = dadosNuvem.map((item, idx) => ({
+                        id: item.id || Date.now() + idx,
+                        data: item.data || obterDataHoje(),
+                        destinatario: item.destinatario || item.nome || "",
+                        nome: item.destinatario || item.nome || "",
+                        cnpj: mapaCNPJShopping[item.destinatario || item.nome] || "",
+                        pallet: item.pallet || "Pallet 1",
+                        peso: parseFloat(item.peso) || 0,
+                        quantidade: parseInt(item.quantidade, 10) || 1,
+                        medida: item.medida || "PADRÃO"
+                    }));
+                    salvarCacheLocalSilencioso();
+                } else {
+                    carregarCacheLocal();
+                }
+            } catch (erro) {
+                console.warn("⚠️ Falha ao conectar à nuvem, carregando rascunho local:", erro);
+                carregarCacheLocal();
+            }
+            renderizarListaDeLotes();
+        }
+
+        function salvarCacheLocalSilencioso() {
             try {
                 localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(lotesSessaoAtual));
             } catch (e) {
                 console.error("Erro ao salvar rascunho local:", e);
             }
+        }
+
+        function salvarCacheLocal() {
+            salvarCacheLocalSilencioso();
             renderizarListaDeLotes();
         }
 
@@ -744,12 +770,18 @@
                 medida: medida
             };
 
+            // Insere o novo lote para renderização local
             lotesSessaoAtual.push(item);
             salvarCacheLocal();
 
             inputCliente.value = "";
             document.getElementById('manual-peso').value = "";
             document.getElementById('manual-qtd').value = "1";
+            document.getElementById('manual-medida-custom').value = "";
+            document.getElementById('manual-pallet-custom').value = "";
+            document.getElementById('manual-medida-custom').style.display = "none";
+            document.getElementById('manual-pallet-custom').style.display = "none";
+            document.getElementById('manual-medida').value = "PADRÃO";
             ignorarValidacaoDuplicado = false;
 
             inputCliente.focus();
@@ -807,12 +839,13 @@
             const termoBusca = (document.getElementById('busca-lotes')?.value || "").toLowerCase().trim();
 
             if (lotesSessaoAtual.length === 0) {
-                container.innerHTML = `<div style="color: #888; font-style: italic; text-align:center; padding: 15px;">Nenhum lote criado no momento. Salvo localmente.</div>`;
+                container.innerHTML = `<div style="color: #888; font-style: italic; text-align:center; padding: 15px;">Nenhum lote criado no momento. Salvo na nuvem.</div>`;
                 return;
             }
 
             const estruturaPallets = {};
 
+            // Iterate over items
             lotesSessaoAtual.forEach((item, originalIndex) => {
                 const p = item.pallet || "Pallet Indefinido";
                 const c = item.destinatario || "Cliente Sem Nome";
@@ -829,7 +862,10 @@
 
             let html = "";
 
-            Object.keys(estruturaPallets).forEach(palletNome => {
+            // 🎯 LOTE NOVO NO TOPO DO CELULAR: Inverte a ordem das chaves de Pallets
+            const palletsOrdenados = Object.keys(estruturaPallets).reverse();
+
+            palletsOrdenados.forEach(palletNome => {
                 let totalVolPallet = 0;
                 let totalPesoPallet = 0;
 
@@ -838,7 +874,10 @@
                         <div class="card-pallet-titulo">📍 ${palletNome}</div>
                 `;
 
-                Object.keys(estruturaPallets[palletNome]).forEach(clienteNome => {
+                // Inverte também a ordem dos clientes dentro do pallet
+                const clientesOrdenados = Object.keys(estruturaPallets[palletNome]).reverse();
+
+                clientesOrdenados.forEach(clienteNome => {
                     const dadosCliente = estruturaPallets[palletNome][clienteNome];
                     const subtotalMedidas = {};
 
@@ -980,7 +1019,6 @@
             }
 
             try {
-                // Envia para a planilha Google em segundo plano
                 fetch(URL_WEB_APP, {
                     method: "POST",
                     mode: "no-cors",
@@ -990,8 +1028,7 @@
 
                 await new Promise(resolve => setTimeout(resolve, 1000));
 
-                // 🎯 PASSA O CACHE PARA O RESUMO ANTES DE IR
-                localStorage.setItem("shoulders_manual_cache_v3", JSON.stringify(lotesSessaoAtual));
+                localStorage.setItem(CHAVE_STORAGE_MANUAL_CACHE, JSON.stringify(lotesSessaoAtual));
 
                 if (btn) btn.disabled = false;
                 if (boxStatus) {
@@ -1007,7 +1044,6 @@
                 }
 
             } catch (err) {
-                // ... restante do seu catch
                 console.error("Erro ao sincronizar:", err);
                 if (btn) btn.disabled = false;
                 if (boxStatus) {
