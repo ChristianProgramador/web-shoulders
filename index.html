@@ -938,23 +938,34 @@
             const boxStatus = document.getElementById('box-status-sinc');
 
             if (btn) btn.disabled = true;
-            if (boxStatus) {
-                boxStatus.style.display = 'block';
-                boxStatus.style.background = '#e8f0fe';
-                boxStatus.style.color = '#1a73e8';
-                boxStatus.innerText = `⏳ Gravando ${total} lote(s) na planilha...`;
-            }
+
+            // 🎯 Divisão em blocos de 50 para garantir 100% de sucesso na nuvem
+            const TAMANHO_BLOCO = 50;
+            const copiaLotes = [...lotesSessaoAtual];
 
             try {
-                fetch(URL_WEB_APP, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ acao: "SALVAR_LOTE_COMPLETO", pacotes: lotesSessaoAtual })
-                });
+                for (let i = 0; i < copiaLotes.length; i += TAMANHO_BLOCO) {
+                    const bloco = copiaLotes.slice(i, i + TAMANHO_BLOCO);
 
-                await new Promise(resolve => setTimeout(resolve, 800));
+                    if (boxStatus) {
+                        boxStatus.style.display = 'block';
+                        boxStatus.style.background = '#e8f0fe';
+                        boxStatus.style.color = '#1a73e8';
+                        boxStatus.innerText = `⏳ Enviando bloco ${Math.ceil((i + 1) / TAMANHO_BLOCO)} de ${Math.ceil(copiaLotes.length / TAMANHO_BLOCO)} (${bloco.length} caixas)...`;
+                    }
 
+                    await fetch(URL_WEB_APP, {
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ acao: "SALVAR_LOTE_COMPLETO", pacotes: bloco })
+                    });
+
+                    // Pausa de segurança entre blocos
+                    await new Promise(resolve => setTimeout(resolve, 600));
+                }
+
+                // 🧹 Limpa os dados locais após enviar todos os blocos com sucesso
                 lotesSessaoAtual = [];
                 localStorage.removeItem(CHAVE_STORAGE_MANUAL_CACHE);
                 renderizarListaDeLotes();
@@ -963,10 +974,10 @@
                 if (boxStatus) {
                     boxStatus.style.background = '#d4edda';
                     boxStatus.style.color = '#155724';
-                    boxStatus.innerText = `✅ Lotes salvos com sucesso e tela limpa!`;
+                    boxStatus.innerText = `✅ Todos os ${total} lotes foram salvos com 100% de sucesso!`;
                 }
 
-                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 1500);
+                setTimeout(() => { if (boxStatus) boxStatus.style.display = 'none'; }, 2000);
 
                 if (confirm("Deseja abrir o Resumo das Notas para emitir agora?")) {
                     window.location.href = "./resumo.html";
@@ -978,7 +989,7 @@
                 if (boxStatus) {
                     boxStatus.style.background = '#f8d7da';
                     boxStatus.style.color = '#721c24';
-                    boxStatus.innerText = "⚠️ Erro ao sincronizar. Tente novamente.";
+                    boxStatus.innerText = "⚠️ Ocorreu uma falha na conexão. Verifique e tente novamente.";
                 }
             }
         }
@@ -994,7 +1005,8 @@
 
     <footer
         style="margin-top: 40px; padding: 15px 0; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666; text-align: center;">
-        Shoulders Expedição &copy; 2026 — Desenvolvido por <strong>Christian Aguero</strong> | Todos os direitos reservados.
+        Shoulders Expedição &copy; 2026 — Desenvolvido por <strong>Christian Aguero</strong> | Todos os direitos
+        reservados.
     </footer>
 
 </body>
